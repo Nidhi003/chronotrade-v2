@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0a0a;
+  --color-foreground: #ffffff;
+  --color-brand-primary: #facc15;
+  --color-brand-accent: #f59e0b;
+  --color-surface: #0f172a;
+  --color-surface-elevated: #1e293b;
+}
+
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Hide ALL number input spinners - Chrome, Safari, Edge */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Firefox - hide spinners */
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
+/* Hide scrollbars globally */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #020617;
+  color: #ffffff;
+}
+
+/* Typography consistency */
+html, html body {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+p {
+  line-height: 1.6;
+}
+
+a {
+  font-family: inherit;
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.glass-dark {
+  background: rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(12px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(250, 204, 21, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(250, 204, 21, 0.5); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
+/* Prose styles for rich text editor */
+.prose {
+  color: #e5e5e5;
+}
+
+.prose p {
+  margin-bottom: 1em;
+}
+
+.prose strong {
+  color: #ffffff;
+}
+
+.prose em {
+  color: #a3a3a3;
+}
+
+/* Page container */
+.page-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0a0a 0%, #020617 100%);
+}
+
+/* ChronoTrade dashboard brand system: black base with yellow gradient accents. */
+.chrono-brand-shell {
+  --chrono-bg: #050505;
+  --chrono-panel: rgba(255, 255, 255, 0.04);
+  --chrono-yellow: #facc15;
+  --chrono-yellow-soft: rgba(250, 204, 21, 0.1);
+  --chrono-yellow-border: rgba(250, 204, 21, 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(250, 204, 21, 0.12), transparent 26%),
+    linear-gradient(180deg, #050505 0%, #0a0a0a 100%);
+}
+
+.chrono-brand-shell .glass,
+.chrono-brand-shell .glass-dark {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(250, 204, 21, 0.025)) !important;
+  border-color: var(--chrono-yellow-border) !important;
+  backdrop-filter: blur(18px);
+}
+
+.chrono-brand-shell .text-blue-400,
+.chrono-brand-shell .text-blue-500,
+.chrono-brand-shell .text-indigo-400,
+.chrono-brand-shell .text-indigo-500,
+.chrono-brand-shell .text-purple-400,
+.chrono-brand-shell .text-purple-500,
+.chrono-brand-shell .text-cyan-400,
+.chrono-brand-shell .text-cyan-500 {
+  color: #fde047 !important;
+}
+
+.chrono-brand-shell .bg-blue-600,
+.chrono-brand-shell .bg-blue-500,
+.chrono-brand-shell .bg-indigo-600,
+.chrono-brand-shell .bg-indigo-500,
+.chrono-brand-shell .bg-purple-600,
+.chrono-brand-shell .bg-purple-500,
+.chrono-brand-shell .bg-cyan-600,
+.chrono-brand-shell .bg-cyan-500,
+.chrono-brand-shell .bg-green-600,
+.chrono-brand-shell .bg-green-500 {
+  background: linear-gradient(90deg, #fef08a 0%, #facc15 48%, #f59e0b 100%) !important;
+  color: #050505 !important;
+}
+
+.chrono-brand-shell .bg-\[\#020617\] {
+  background-color: #050505 !important;
+}
+
+.chrono-brand-shell [class~="bg-blue-500/10"],
+.chrono-brand-shell [class~="bg-blue-500/20"],
+.chrono-brand-shell [class~="bg-indigo-500/10"],
+.chrono-brand-shell [class~="bg-indigo-500/20"],
+.chrono-brand-shell [class~="bg-purple-500/10"],
+.chrono-brand-shell [class~="bg-purple-500/20"],
+.chrono-brand-shell [class~="bg-cyan-500/10"],
+.chrono-brand-shell [class~="bg-cyan-500/20"] {
+  background-color: var(--chrono-yellow-soft) !important;
+}
+
+.chrono-brand-shell [class~="border-blue-500/20"],
+.chrono-brand-shell [class~="border-blue-500/30"],
+.chrono-brand-shell [class~="border-blue-500/50"],
+.chrono-brand-shell [class~="border-indigo-500/20"],
+.chrono-brand-shell [class~="border-indigo-500/30"],
+.chrono-brand-shell [class~="border-indigo-500/50"],
+.chrono-brand-shell [class~="border-purple-500/20"],
+.chrono-brand-shell [class~="border-purple-500/30"],
+.chrono-brand-shell [class~="border-purple-500/50"],
+.chrono-brand-shell [class~="border-cyan-500/20"],
+.chrono-brand-shell [class~="border-cyan-500/30"] {
+  border-color: var(--chrono-yellow-border) !important;
+}
+
+.chrono-brand-shell .border-l-purple-500,
+.chrono-brand-shell .border-blue-500,
+.chrono-brand-shell .border-indigo-500,
+.chrono-brand-shell .border-purple-500,
+.chrono-brand-shell .ring-blue-500 {
+  border-color: var(--chrono-yellow) !important;
+  --tw-ring-color: var(--chrono-yellow) !important;
+}
+
+.chrono-brand-shell .hover\:bg-blue-500:hover,
+.chrono-brand-shell .hover\:bg-indigo-500:hover,
+.chrono-brand-shell .hover\:bg-purple-500:hover,
+.chrono-brand-shell .hover\:bg-cyan-500:hover,
+.chrono-brand-shell .hover\:bg-green-500:hover {
+  background: linear-gradient(90deg, #fef9c3 0%, #fde047 48%, #facc15 100%) !important;
+  color: #050505 !important;
+}
+
+/* Trade detail slide-over panel */
+.trade-detail-panel {
+  background: linear-gradient(180deg, #0b0b0b 0%, #080808 100%);
+}
+
+/* Upgrade banner shimmer */
+.upgrade-banner {
+  background: linear-gradient(
+    90deg,
+    rgba(250, 204, 21, 0.06) 0%,
+    rgba(250, 204, 21, 0.15) 25%,
+    rgba(245, 158, 11, 0.10) 50%,
+    rgba(250, 204, 21, 0.15) 75%,
+    rgba(250, 204, 21, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s ease-in-out infinite;
+}

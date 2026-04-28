@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a"/>
+      <stop offset="100%" style="stop-color:#1a1a2e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Grid pattern -->
+  <g opacity="0.1">
+    <line x1="0" y1="100" x2="1200" y2="100" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="0" y1="200" x2="1200" y2="200" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="0" y1="300" x2="1200" y2="300" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="0" y1="400" x2="1200" y2="400" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="0" y1="500" x2="1200" y2="500" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="200" y1="0" x2="200" y2="630" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="400" y1="0" x2="400" y2="630" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="600" y1="0" x2="600" y2="630" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="800" y1="0" x2="800" y2="630" stroke="#3b82f6" stroke-width="1"/>
+    <line x1="1000" y1="0" x2="1000" y2="630" stroke="#3b82f6" stroke-width="1"/>
+  </g>
+  
+  <!-- Glowing orb -->
+  <circle cx="900" cy="300" r="250" fill="#3b82f6" opacity="0.15"/>
+  <circle cx="900" cy="300" r="180" fill="#8b5cf6" opacity="0.1"/>
+  
+  <!-- Logo -->
+  <g transform="translate(100, 180)">
+    <rect width="80" height="80" rx="16" fill="url(#accent)"/>
+    <path d="M20 10 L60 10 L40 45 L65 45 L25 80 L40 45 L10 45 Z" fill="white"/>
+  </g>
+  
+  <!-- Brand name -->
+  <text x="210" y="235" font-family="system-ui, sans-serif" font-size="56" font-weight="900" fill="white">
+    ChronoTrade
+  </text>
+  <text x="210" y="280" font-family="system-ui, sans-serif" font-size="24" fill="#94a3b8">
+    Trading Journal
+  </text>
+  
+  <!-- Main headline -->
+  <text x="100" y="380" font-family="system-ui, sans-serif" font-size="42" font-weight="700" fill="white">
+    The AI-Powered Trading Journal
+  </text>
+  <text x="100" y="430" font-family="system-ui, sans-serif" font-size="32" font-weight="400" fill="#94a3b8">
+    Track • Analyze • Improve
+  </text>
+  
+  <!-- Stats row -->
+  <g transform="translate(100, 500)">
+    <g>
+      <text font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#3b82f6">10K+</text>
+      <text y="28" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">Active Traders</text>
+    </g>
+    <g transform="translate(200, 0)">
+      <text font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#10b981">$2.4M</text>
+      <text y="28" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">Tracked P&L</text>
+    </g>
+    <g transform="translate(400, 0)">
+      <text font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#8b5cf6">94%</text>
+      <text y="28" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">Win Rate Improved</text>
+    </g>
+  </g>
+  
+  <!-- Features icons -->
+  <g transform="translate(850, 450)" opacity="0.8">
+    <circle cx="30" cy="30" r="25" fill="#3b82f6" opacity="0.3"/>
+    <text x="18" y="38" font-size="24">🤖</text>
+    
+    <circle cx="100" cy="30" r="25" fill="#10b981" opacity="0.3"/>
+    <text x="88" y="38" font-size="24">📊</text>
+    
+    <circle cx="170" cy="30" r="25" fill="#8b5cf6" opacity="0.3"/>
+    <text x="158" y="38" font-size="24">🎯</text>
+  </g>
+  
+  <!-- CTA -->
+  <g transform="translate(850, 520)">
+    <rect width="200" height="45" rx="22" fill="url(#accent)"/>
+    <text x="50" y="30" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="white">Start Free →</text>
+  </g>
+</svg>
