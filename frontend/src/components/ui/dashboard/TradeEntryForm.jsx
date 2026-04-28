@@ -288,30 +288,146 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
                     <div className="mt-4 text-xl font-bold text-white">Short</div>
                     <div className="mt-1 text-sm text-zinc-400">Profit if price falls</div>
                   </button>
-</div>
+                </div>
 
                 <div>
-                  <label className="mb-3 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
-                    Account
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+                    Quantity / Position Size
                   </label>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {accountOptions.map((acc) => (
-                      <button
-                        key={acc.id}
-                        onClick={() => setFormData({ ...formData, accountId: acc.id })}
-                        className={`rounded-[1.4rem] border p-4 text-left transition ${
-                          formData.accountId === acc.id
-                            ? "border-yellow-300/35 bg-yellow-300/10"
-                            : "border-white/8 bg-white/[0.03]"
-                        }`}
-                      >
-                        <div className="font-semibold text-white">{acc.name}</div>
-                        <div className="mt-1 text-sm text-zinc-400">{acc.broker || 'Manual'}</div>
-                      </button>
-                    ))}
+                  <input
+                    type="number"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    placeholder="Enter quantity (e.g., 0.01)"
+                    className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none transition focus:border-yellow-300/35"
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {step === 2 && (
+              <motion.div
+                key="step-2"
+                initial={{ opacity: 0, x: 14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -14 }}
+                className="space-y-6"
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+                      Entry Price
+                    </label>
+                    <input
+                      type="number"
+                      step="0.00001"
+                      value={formData.entryPrice}
+                      onChange={(e) => setFormData({ ...formData, entryPrice: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none transition focus:border-yellow-300/35"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+                      Exit Price
+                    </label>
+                    <input
+                      type="number"
+                      step="0.00001"
+                      value={formData.exitPrice}
+                      onChange={(e) => setFormData({ ...formData, exitPrice: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none transition focus:border-yellow-300/35"
+                    />
                   </div>
                 </div>
 
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+                      P&L ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.pnl}
+                      onChange={(e) => setFormData({ ...formData, pnl: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none transition focus:border-yellow-300/35"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+                      Swap Fee ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.swapFee}
+                      onChange={(e) => setFormData({ ...formData, swapFee: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none transition focus:border-yellow-300/35"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+                      Commission ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.commission}
+                      onChange={(e) => setFormData({ ...formData, commission: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none transition focus:border-yellow-300/35"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-[1.6rem] border border-emerald-500/20 bg-emerald-500/10 p-5">
+                  <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.24em] text-emerald-300 mb-3">
+                    <DollarSign className="h-4 w-4" />
+                    Net P&L Calculation
+                  </div>
+                  <div className="text-3xl font-black text-white">
+                    {finalPnl >= 0 ? "+" : ""}${finalPnl.toFixed(2)}
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-400">
+                    P&L minus fees = Net Result
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+                    Risk Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.riskAmount}
+                    onChange={(e) => setFormData({ ...formData, riskAmount: e.target.value })}
+                    placeholder="Amount risked on this trade"
+                    className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-4 text-white outline-none transition focus:border-yellow-300/35"
+                  />
+                </div>
+
+                {riskToReward !== null && (
+                  <div className="rounded-[1.6rem] border border-yellow-200/15 bg-yellow-200/[0.05] p-4">
+                    <div className="text-xs uppercase tracking-[0.24em] text-zinc-500 mb-1">Risk to Reward</div>
+                    <div className="text-2xl font-bold text-yellow-200">1:{riskToReward.toFixed(2)}</div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {step === 3 && (
+              <motion.div
+                key="step-3"
+                initial={{ opacity: 0, x: 14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -14 }}
+                className="space-y-6"
+              >
                 <div>
                   <label className="mb-3 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
                     Strategy
@@ -375,6 +491,28 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
                       >
                         <div className="font-bold text-white">{item.label}</div>
                         <div className="mt-1 text-sm text-zinc-400">{item.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-3 block text-xs font-bold uppercase tracking-[0.28em] text-zinc-500">
+                    Account
+                  </label>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {accountOptions.map((acc) => (
+                      <button
+                        key={acc.id}
+                        onClick={() => setFormData({ ...formData, accountId: acc.id })}
+                        className={`rounded-[1.4rem] border p-4 text-left transition ${
+                          formData.accountId === acc.id
+                            ? "border-yellow-300/35 bg-yellow-300/10"
+                            : "border-white/8 bg-white/[0.03]"
+                        }`}
+                      >
+                        <div className="font-semibold text-white">{acc.name}</div>
+                        <div className="mt-1 text-sm text-zinc-400">{acc.broker || 'Manual'}</div>
                       </button>
                     ))}
                   </div>
