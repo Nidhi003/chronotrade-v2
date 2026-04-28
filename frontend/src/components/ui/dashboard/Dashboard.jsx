@@ -283,7 +283,14 @@ export default function TradingDashboard() {
   };
 
   return (
-    <div className="chrono-brand-shell flex h-dvh w-full selection:bg-yellow-300/30 text-white bg-[#050505]">
+    <div className="chrono-brand-shell flex h-dvh w-full selection:bg-yellow-300/30 text-white bg-[#050505] overflow-hidden">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <Sidebar
         open={sidebarOpen}
         setOpen={setSidebarOpen}
@@ -294,7 +301,7 @@ export default function TradingDashboard() {
         tier={tier}
       />
 
-      <main className="flex-1 min-w-0 overflow-x-hidden lg:ml-0 overflow-y-auto">
+      <main className="flex-1 min-w-0 h-dvh overflow-y-auto overflow-x-hidden">
         <Header 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
             theme={theme} 
@@ -713,7 +720,7 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
     <motion.nav
       initial={false}
       animate={{ width: open ? 200 : 64, x: open ? 0 : -200 }}
-      className="fixed lg:relative flex flex-col h-dvh border-r z-50 lg:z-40 transition-all duration-300 ease-in-out -left-full lg:left-0 overflow-y-auto glass-dark border-white/5"
+      className="fixed lg:relative flex flex-col h-dvh border-r z-50 lg:z-40 transition-all duration-300 ease-in-out left-0 lg:left-0 overflow-y-auto glass-dark border-white/5"
     >
       {/* Logo */}
       <div className="p-3 mb-2 shrink-0 flex items-center justify-center">

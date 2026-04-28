@@ -95,7 +95,7 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
   const isStepValid = () => {
     switch (step) {
       case 1:
-        return formData.symbol && formData.side && formData.quantity;
+        return formData.symbol && formData.side;
       case 2:
         return formData.pnl !== "";
       case 3:
@@ -158,11 +158,11 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 14 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-3xl overflow-hidden rounded-[2rem] border border-yellow-200/10 bg-[#0b0b0b] shadow-[0_30px_120px_rgba(0,0,0,0.55)]"
+        className="w-full max-w-3xl overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] border border-yellow-200/10 bg-[#0b0b0b] shadow-[0_30px_120px_rgba(0,0,0,0.55)] max-h-[95dvh] flex flex-col"
       >
         <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.12),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-6">
           <div className="flex items-start justify-between gap-6">
@@ -202,7 +202,7 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
           </div>
         </div>
 
-        <div className="max-h-[62vh] overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {limitError && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
