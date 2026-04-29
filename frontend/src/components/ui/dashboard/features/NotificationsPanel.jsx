@@ -15,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 import localStorageManager from "@/lib/storage";
+import { supabase } from "@/lib/supabase";
 
 const NOTIFICATION_TYPES = {
   STREAK_WARNING: {
@@ -98,12 +99,12 @@ function getUpcomingEconomicEvents() {
   return events.filter((event) => event.time > now && event.impact === "high");
 }
 
-function generateNotifications() {
-  const trades = localStorageManager.getTrades();
+function generateNotifications(trades = null) {
+  const tradesData = trades || localStorageManager.getTrades();
   const journalEntries = localStorageManager.getJournalEntries ? localStorageManager.getJournalEntries() : [];
   const alerts = [];
   const now = new Date();
-  const sortedTrades = [...trades].sort((a, b) => new Date(getTradeTimestamp(b)) - new Date(getTradeTimestamp(a)));
+  const sortedTrades = [...tradesData].sort((a, b) => new Date(getTradeTimestamp(b)) - new Date(getTradeTimestamp(a)));
   const recentTrades = sortedTrades.slice(0, 12);
   const winningStreak = calculateStreak(recentTrades, "win");
   const losingStreak = calculateStreak(recentTrades, "loss");
@@ -234,11 +235,38 @@ function getTimeAgo(timestamp) {
 export default function NotificationsPanel({ isOpen, onClose, theme = "dark" }) {
   const [notifications, setNotifications] = useState([]);
   const [lastChecked, setLastChecked] = useState(null);
+  const [realtimeTrades, setRealtimeTrades] = useState([]);
   const isDark = theme === "dark";
 
+  // Load initial trades + subscribe to realtime changes
   useEffect(() => {
     if (!isOpen) return;
-    setNotifications(generateNotifications());
+
+    const loadTrades = async () => {
+      const localTrades = localStorageManager.getTrades();
+      setRealtimeTrades(localTrades);
+      setNotifications(generateNotifications(localTrades));
+    };
+    loadTrades();
+
+    // Subscribe to realtime trade changes
+    const channel = supabase
+      .channel('trades-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'trades' },
+        (payload) => {
+          // Refesh trades and regenerate notifications
+          const updatedTrades = localStorageManager.getTrades();
+          setRealtimeTrades(updatedTrades);
+          setNotifications(generateNotifications(updatedTrades));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isOpen]);
 
   const unreadCount = notifications.length;
