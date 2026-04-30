@@ -88,7 +88,7 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
 
   const riskToReward = useMemo(() => {
     const risk = parseFloat(formData.riskAmount) || 0;
-    if (!risk) return null;
+    if (!risk || finalPnl <= 0) return null;
     return finalPnl / risk;
   }, [finalPnl, formData.riskAmount]);
 

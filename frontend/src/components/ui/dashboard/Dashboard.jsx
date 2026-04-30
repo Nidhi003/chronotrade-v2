@@ -934,9 +934,16 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
     return streak;
   }, [trades]);
   
-  // Calculate Risk to Reward ratio
-  const avgWin = wins > 0 ? trades.filter(t => (t.pnl || 0) > 0).reduce((sum, t) => sum + (t.pnl || 0), 0) / wins : 0;
-  const avgLoss = trades.length - wins > 0 ? Math.abs(trades.filter(t => (t.pnl || 0) < 0).reduce((sum, t) => sum + (t.pnl || 0), 0) / (trades.length - wins)) : 1;
+  // Calculate Risk to Reward ratio from actual trade P&L
+  const winningTrades = trades.filter(t => (t.pnl || 0) > 0);
+  const losingTrades = trades.filter(t => (t.pnl || 0) < 0);
+  
+  const totalWin = winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+  const totalLoss = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0));
+  
+  const avgWin = winningTrades.length > 0 ? totalWin / winningTrades.length : 0;
+  const avgLoss = losingTrades.length > 0 ? totalLoss / losingTrades.length : 0;
+  
   const rr = avgLoss > 0 ? (avgWin / avgLoss).toFixed(1) : '0';
 
   const stats = [
