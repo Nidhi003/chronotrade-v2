@@ -176,7 +176,7 @@ export default function TradingDashboard() {
 
   // Calculate equity curve from trades using account balance
   const equityData = React.useMemo(() => {
-    const startingBalance = accountBalance || 10000;
+    const startingBalance = accountBalance ?? 10000;
     if (!trades || !trades.length) return [{ date: "Now", value: startingBalance }];
     
     const sortedTrades = [...trades].sort((a, b) => 
@@ -984,7 +984,7 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
   const stats = [
     {
       title: "Account Balance",
-      value: `$${accountBalance.toLocaleString()}`,
+      value: `$${(accountBalance || 10000).toLocaleString()}`,
       change: "",
       isPositive: true,
       icon: DollarSign,
