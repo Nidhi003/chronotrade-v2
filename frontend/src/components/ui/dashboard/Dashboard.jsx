@@ -96,7 +96,6 @@ export default function TradingDashboard() {
   const { tier, canAccess } = useSubscription();
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(true);
-  const [accountBalance, setAccountBalance] = React.useState(10000);
   const [trades, setTrades] = React.useState([]);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [selectedMenu, setSelectedMenu] = React.useState("Dashboard");
@@ -154,11 +153,6 @@ export default function TradingDashboard() {
     return () => window.removeEventListener('name-updated', handleNameUpdate);
   }, [userName]);
 
-  // Save balance to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('chronotrade_balance', accountBalance.toString());
-  }, [accountBalance]);
-
   // Load trades from local storage (instant load)
   useEffect(() => {
     const loadTrades = async () => {
@@ -194,9 +188,9 @@ export default function TradingDashboard() {
     return () => window.removeEventListener('importTrades', handleImportTrades);
   }, []);
 
-  // Calculate equity curve from trades using account balance
+  // Calculate equity curve from trades
   const equityData = React.useMemo(() => {
-    const startingBalance = accountBalance ?? 10000;
+    const startingBalance = 10000;
     if (!trades || !trades.length) return [{ date: "Now", value: startingBalance }];
     
     const sortedTrades = [...trades].sort((a, b) => 
@@ -211,7 +205,7 @@ export default function TradingDashboard() {
         value: cumulative 
       };
     });
-  }, [trades, accountBalance]);
+  }, [trades]);
 
   // Calculate strategy data from actual trades
   const strategyData = React.useMemo(() => {
@@ -355,8 +349,6 @@ export default function TradingDashboard() {
         <Header 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
             theme={theme} 
-            accountBalance={accountBalance} 
-            setAccountBalance={setAccountBalance} 
             brokerConnected={brokerConnected}
             showNotifications={showNotifications}
             setShowNotifications={setShowNotifications}
