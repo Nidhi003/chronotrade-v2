@@ -840,9 +840,13 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
 // -------------------------------------------------------------------------
 // HEADER COMPONENT
 // -------------------------------------------------------------------------
-const Header = ({ onMenuClick, theme, accountBalance, startingBalance, setStartingBalance, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
+const Header = ({ onMenuClick, theme, accountBalance, startingBalance = 10000, setStartingBalance, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
   const [showBalanceEdit, setShowBalanceEdit] = React.useState(false);
-  const [editBalance, setEditBalance] = React.useState(startingBalance);
+  const [editBalance, setEditBalance] = React.useState(() => {
+    if (typeof startingBalance === 'number' && startingBalance > 0) return startingBalance;
+    const saved = parseFloat(localStorage.getItem('chronotrade_starting_balance'));
+    return saved || 10000;
+  });
 
   const handleSaveBalance = () => {
     setStartingBalance(parseFloat(editBalance) || 10000);
