@@ -266,12 +266,19 @@ export default function TradingDashboard() {
 
   const handleDeleteTrade = async (tradeId) => {
     if (!confirm("Delete this trade?")) return;
+    
+    // Delete from local storage
+    const trades = localStorageManager.getTrades();
+    const filtered = trades.filter(t => t.id !== tradeId);
+    localStorageManager.saveTrades(filtered);
+    setTrades(filtered);
+    
+    // Try cloud delete too
     try {
       await deleteTrade(tradeId);
     } catch (e) {
-      console.error('Failed to delete from server:', e);
+      console.warn('Cloud delete failed, local delete saved');
     }
-    setTrades(prev => prev.filter(t => t.id !== tradeId));
   };
 
   const handleUpdateTrade = async (tradeId, updates) => {
@@ -941,17 +948,21 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
     return streak;
   }, [trades]);
   
-  // Calculate Risk to Reward ratio from actual trade P&L
-  const winningTrades = trades.filter(t => (t.pnl || 0) > 0);
-  const losingTrades = trades.filter(t => (t.pnl || 0) < 0);
+  // Calculate Risk to Reward ratio from trades with risk data
+  const tradesWithRisk = trades.filter(t => (t.riskAmount || 0) > 0 && (t.pnl || 0) !== 0);
+  let avgRR = '0';
   
-  const totalWin = winningTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-  const totalLoss = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0));
-  
-  const avgWin = winningTrades.length > 0 ? totalWin / winningTrades.length : 0;
-  const avgLoss = losingTrades.length > 0 ? totalLoss / losingTrades.length : 0;
-  
-  const rr = avgLoss > 0 ? (avgWin / avgLoss).toFixed(1) : '0';
+  if (tradesWithRisk.length > 0) {
+    const rrValues = tradesWithRisk.map(t => {
+      const risk = Math.abs(t.riskAmount || 0);
+      return risk > 0 ? (t.pnl || 0) / risk : 0;
+    });
+    const validRR = rrValues.filter(v => v !== 0);
+    if (validRR.length > 0) {
+      const sumRR = validRR.reduce((a, b) => a + b, 0);
+      avgRR = (sumRR / validRR.length).toFixed(1);
+    }
+  }
 
   const stats = [
     {
@@ -974,9 +985,9 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
     },
     {
       title: "Risk:Reward",
-      value: `${rr}R`,
+      value: `${avgRR}R`,
       change: "",
-      isPositive: parseFloat(rr) >= 1.5,
+      isPositive: parseFloat(avgRR) >= 1.5,
       icon: Activity,
       iconWrap: "bg-yellow-300/10 border border-yellow-300/20",
       iconClass: "text-yellow-200",
