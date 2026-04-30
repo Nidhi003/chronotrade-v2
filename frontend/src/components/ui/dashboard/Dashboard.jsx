@@ -846,13 +846,10 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
 // -------------------------------------------------------------------------
 // HEADER COMPONENT
 // -------------------------------------------------------------------------
-const Header = ({ onMenuClick, theme, accountBalance, startingBalance = 10000, setStartingBalance, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
+const Header = ({ onMenuClick, theme, accountBalance, startingBalance = 10000, setStartingBalance = () => {}, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
+  const safeBalance = typeof startingBalance === 'number' && startingBalance > 0 ? startingBalance : 10000;
   const [showBalanceEdit, setShowBalanceEdit] = React.useState(false);
-  const [editBalance, setEditBalance] = React.useState(() => {
-    if (typeof startingBalance === 'number' && startingBalance > 0) return startingBalance;
-    const saved = parseFloat(localStorage.getItem('chronotrade_starting_balance'));
-    return saved || 10000;
-  });
+  const [editBalance, setEditBalance] = React.useState(safeBalance);
 
   const handleSaveBalance = () => {
     setStartingBalance(parseFloat(editBalance) || 10000);
@@ -898,10 +895,10 @@ const Header = ({ onMenuClick, theme, accountBalance, startingBalance = 10000, s
               </div>
             ) : (
               <button 
-                onClick={() => { setEditBalance(startingBalance); setShowBalanceEdit(true); }}
+                onClick={() => { setEditBalance(safeBalance); setShowBalanceEdit(true); }}
                 className="text-[10px] text-yellow-400/70 hover:text-yellow-300 font-mono flex items-center gap-1"
               >
-                Starting: ${startingBalance.toLocaleString()}
+                Starting: ${safeBalance.toLocaleString()}
                 <Pencil className="h-2.5 w-2.5" />
               </button>
             )}
