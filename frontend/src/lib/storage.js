@@ -1,5 +1,9 @@
 import { supabase } from './supabase';
 
+const sanitizeInput = (v) => String(v || '').slice(0, 100);
+const sanitizeHtml = (v) => String(v || '').slice(0, 5000);
+const generateSecureId = () => crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+
 const STORAGE_KEY = 'chronotrade_trades';
 const SYNC_STATUS_KEY = 'chronotrade_sync_status';
 const TRADE_LIMIT_KEY = 'chronotrade_trade_limits';
@@ -128,27 +132,26 @@ export const localStorageManager = {
   addTrade: (trade) => {
     const trades = localStorageManager.getTrades();
     
-    // Sanitize trade data for security
-    const sanitizedTrade = securityUtils.sanitizeTradeData(trade);
-    
     const newTrade = {
-      ...sanitizedTrade,
+      symbol: sanitizeInput(trade.symbol || '').toUpperCase().slice(0, 20),
+      side: ['LONG', 'SHORT'].includes(trade.side) ? trade.side : 'LONG',
+      quantity: Math.max(0, parseFloat(trade.quantity) || 0),
+      entryPrice: Math.max(0, parseFloat(trade.entryPrice) || 0),
+      exitPrice: Math.max(0, parseFloat(trade.exitPrice) || 0),
+      pnl: parseFloat(trade.pnl) || 0,
       riskAmount: parseFloat(trade.riskAmount) || 0,
       swapFee: parseFloat(trade.swapFee) || 0,
       commission: parseFloat(trade.commission) || 0,
-      timeframe: securityUtils.sanitizeInput(trade.timeframe || ''),
-      confidence: securityUtils.sanitizeInput(trade.confidence || ''),
+      strategy: sanitizeInput(trade.strategy || 'Other').slice(0, 50),
+      timeframe: sanitizeInput(trade.timeframe || '').slice(0, 20),
+      confidence: sanitizeInput(trade.confidence || 'medium').slice(0, 20),
+      notes: sanitizeHtml(trade.notes || '').slice(0, 5000),
+      status: parseFloat(trade.pnl) >= 0 ? 'WIN' : 'LOSS',
       imported: !!trade.imported,
-      id: securityUtils.generateSecureId(),
+      id: generateSecureId(),
       created_at: trade.created_at || new Date().toISOString(),
       synced: false
     };
-    
-    // Validate P&L is within reasonable bounds
-    if (Math.abs(newTrade.pnl) > 10000000) {
-      console.error('Suspicious P&L value detected');
-      newTrade.pnl = Math.max(-10000000, Math.min(10000000, newTrade.pnl));
-    }
     
     trades.unshift(newTrade);
     localStorageManager.saveTrades(trades);
