@@ -38,6 +38,9 @@ import {
   Clock,
   Play,
   Brain,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import {
   XAxis,
@@ -96,6 +99,7 @@ export default function TradingDashboard() {
   const { tier, canAccess } = useSubscription();
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(true);
+  const [startingBalance, setStartingBalance] = React.useState(() => parseFloat(localStorage.getItem('chronotrade_starting_balance')) || 10000);
   const [trades, setTrades] = React.useState([]);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [selectedMenu, setSelectedMenu] = React.useState("Dashboard");
@@ -185,10 +189,32 @@ export default function TradingDashboard() {
     return () => window.removeEventListener('importTrades', handleImportTrades);
   }, []);
 
+  // Calculate current account balance from trades
+  const accountBalance = React.useMemo(() => {
+    const totalPnl = trades.reduce((sum, trade) => sum + (parseFloat(trade.pnl) || 0), 0);
+    return startingBalance + totalPnl;
+  }, [trades, startingBalance]);
+
   // Calculate equity curve from trades
   const equityData = React.useMemo(() => {
-    const startingBalance = 10000;
     if (!trades || !trades.length) return [{ date: "Now", value: startingBalance }];
+    
+    const sortedTrades = [...trades].sort((a, b) => 
+      new Date(a.created_at) - new Date(b.created_at)
+    );
+    
+    let cumulative = startingBalance;
+    return sortedTrades.slice(0, 15).map(t => {
+      cumulative += t.pnl || 0;
+      return { 
+        date: new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 
+        value: cumulative 
+      };
+    });
+  }, [trades, startingBalance]);
+
+  // Legacy equityData for backward compatibility
+  const equityDataOld = React.useMemo(() => {
     
     const sortedTrades = [...trades].sort((a, b) => 
       new Date(a.created_at) - new Date(b.created_at)
@@ -346,6 +372,9 @@ export default function TradingDashboard() {
         <Header 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
             theme={theme} 
+            accountBalance={accountBalance}
+            startingBalance={startingBalance}
+            setStartingBalance={setStartingBalance}
             brokerConnected={brokerConnected}
             showNotifications={showNotifications}
             setShowNotifications={setShowNotifications}
@@ -828,7 +857,15 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
 // -------------------------------------------------------------------------
 // HEADER COMPONENT
 // -------------------------------------------------------------------------
-const Header = ({ onMenuClick, theme, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
+const Header = ({ onMenuClick, theme, accountBalance, startingBalance, setStartingBalance, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
+  const [showBalanceEdit, setShowBalanceEdit] = React.useState(false);
+  const [editBalance, setEditBalance] = React.useState(startingBalance);
+
+  const handleSaveBalance = () => {
+    setStartingBalance(parseFloat(editBalance) || 10000);
+    localStorage.setItem('chronotrade_starting_balance', editBalance.toString());
+    setShowBalanceEdit(false);
+  };
   const iconButtonClass = "rounded-2xl border border-yellow-200/10 bg-white/[0.03] p-2.5 transition-all hover:bg-white/[0.06]";
 
   return (
@@ -848,6 +885,37 @@ const Header = ({ onMenuClick, theme, brokerConnected, showNotifications, setSho
           <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
             <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Live Journal
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            {showBalanceEdit ? (
+              <div className="flex items-center gap-1">
+                <input 
+                  type="number"
+                  value={editBalance}
+                  onChange={(e) => setEditBalance(e.target.value)}
+                  className="w-24 px-2 py-0.5 text-xs bg-black/50 border border-yellow-300/30 rounded text-yellow-300 font-mono"
+                  autoFocus
+                />
+                <button onClick={handleSaveBalance} className="text-emerald-400 hover:text-emerald-300">
+                  <Check className="h-3 w-3" />
+                </button>
+                <button onClick={() => setShowBalanceEdit(false)} className="text-rose-400 hover:text-rose-300">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => { setEditBalance(startingBalance); setShowBalanceEdit(true); }}
+                className="text-[10px] text-yellow-400/70 hover:text-yellow-300 font-mono flex items-center gap-1"
+              >
+                Starting: ${startingBalance.toLocaleString()}
+                <Pencil className="h-2.5 w-2.5" />
+              </button>
+            )}
+            <span className="text-[10px] text-zinc-600">|</span>
+            <span className="text-[10px] text-emerald-400 font-mono">
+              Current: ${accountBalance.toLocaleString()}
+            </span>
           </div>
         </div>
         
@@ -992,13 +1060,22 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
 
   const stats = [
     {
-      title: "Account Balance",
-      value: "$10,000",
+      title: "Starting Balance",
+      value: `$${startingBalance.toLocaleString()}`,
       change: "",
       isPositive: true,
       icon: DollarSign,
       iconWrap: "bg-blue-400/10 border border-blue-300/20",
       iconClass: "text-blue-200",
+    },
+    {
+      title: "Current Balance",
+      value: `$${accountBalance.toLocaleString()}`,
+      change: "",
+      isPositive: true,
+      icon: DollarSign,
+      iconWrap: "bg-emerald-400/10 border border-emerald-300/20",
+      iconClass: "text-emerald-200",
     },
     {
       title: "Portfolio P&L",
