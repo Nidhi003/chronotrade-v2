@@ -242,18 +242,25 @@ export default function TradingDashboard() {
   }
 
   const handleTradeAdded = (newTrade) => {
-    const saved = localStorageManager.addTrade({
-      symbol: newTrade.symbol,
-      side: newTrade.side,
+    const trade = {
+      symbol: String(newTrade.symbol || '').toUpperCase().slice(0, 20),
+      side: newTrade.side === 'SHORT' ? 'SHORT' : 'LONG',
       pnl: parseFloat(newTrade.pnl) || 0,
-      riskAmount: newTrade.risk_amount || newTrade.riskAmount || null,
-      strategy: newTrade.strategy || null,
-      timeframe: newTrade.timeframe || null,
-      notes: newTrade.notes || null,
+      riskAmount: parseFloat(newTrade.riskAmount) || 0,
+      strategy: newTrade.strategy || '',
+      timeframe: newTrade.timeframe || '',
+      notes: newTrade.notes || '',
       confidence: newTrade.confidence || 'medium',
-      status: parseFloat(newTrade.pnl) >= 0 ? "WIN" : "LOSS",
-    });
-    setTrades(prev => [saved, ...prev]);
+      status: parseFloat(newTrade.pnl) >= 0 ? 'WIN' : 'LOSS',
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 10),
+      created_at: new Date().toISOString(),
+      synced: false
+    };
+    
+    const trades = localStorageManager.getTrades();
+    trades.unshift(trade);
+    localStorageManager.saveTrades(trades);
+    setTrades(trades);
     setShowTradeForm(false);
   };
 
