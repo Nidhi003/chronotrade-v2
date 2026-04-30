@@ -245,13 +245,13 @@ export default function TradingDashboard() {
     const saved = localStorageManager.addTrade({
       symbol: newTrade.symbol,
       side: newTrade.side,
-      quantity: parseFloat(newTrade.quantity),
-      entryPrice: parseFloat(newTrade.entryPrice),
-      exitPrice: parseFloat(newTrade.exitPrice),
-      pnl: parseFloat(newTrade.pnl),
-      status: newTrade.status,
-      strategy: newTrade.strategy,
-      notes: newTrade.notes,
+      pnl: parseFloat(newTrade.pnl) || 0,
+      riskAmount: newTrade.risk_amount || newTrade.riskAmount || null,
+      strategy: newTrade.strategy || null,
+      timeframe: newTrade.timeframe || null,
+      notes: newTrade.notes || null,
+      confidence: newTrade.confidence || 'medium',
+      status: parseFloat(newTrade.pnl) >= 0 ? "WIN" : "LOSS",
     });
     setTrades(prev => [saved, ...prev]);
     setShowTradeForm(false);

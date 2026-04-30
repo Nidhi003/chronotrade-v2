@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, X, TrendingUp, TrendingDown, Sparkles } from "lucide-react";
-import localStorageManager from "@/lib/storage";
 
 const POPULAR_PAIRS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "BTC/USD", "NAS100", "SPX500", "EUR/GBP", "AUD/USD", "USD/CHF"];
 const STRATEGIES = ["Breakout", "Pullback", "Reversal", "Trend", "Range", "Scalp", "News", "Swing"];
@@ -19,19 +18,18 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
     notes: "",
     confidence: "medium"
   });
-  const [saving, setSaving] = useState(false);
 
-  const isValid = form.symbol && form.side && (form.pnl !== "" || form.pnl != 0);
+  const isValid = form.symbol && form.pnl !== "";
 
-  const handleSubmit = async () => {
-    if (!isValid || saving) return;
-    setSaving(true);
+  const handleSubmit = () => {
+    if (!isValid) return;
 
     const trade = {
       symbol: form.symbol.toUpperCase(),
       side: form.side,
       pnl: parseFloat(form.pnl) || 0,
       risk_amount: form.riskAmount ? parseFloat(form.riskAmount) : null,
+      riskAmount: form.riskAmount ? parseFloat(form.riskAmount) : null,
       strategy: form.strategy || null,
       timeframe: form.timeframe || null,
       notes: form.notes || null,
@@ -40,7 +38,6 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
       created_at: new Date().toISOString(),
     };
 
-    localStorageManager.incrementTradeCount();
     onTradeAdded?.(trade);
     onClose();
   };
@@ -165,15 +162,15 @@ export default function TradeEntryForm({ onClose, onTradeAdded }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!isValid || saving}
+            disabled={!isValid}
             className={`flex-1 flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold transition ${
-              isValid && !saving
+              isValid
                 ? "bg-yellow-300 text-black hover:bg-yellow-200"
                 : "bg-zinc-700 text-zinc-500"
             }`}
           >
             <CheckCircle2 className="h-5 w-5" />
-            {saving ? "Saving..." : "Save Trade"}
+            Save Trade
           </button>
         </div>
       </div>
