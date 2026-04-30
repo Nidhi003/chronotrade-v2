@@ -144,15 +144,28 @@ export default function TradingDashboard() {
     localStorage.setItem('chronotrade_balance', accountBalance.toString());
   }, [accountBalance]);
 
-  // Load trades from cloud first (if authenticated), then fallback to local
+  // Load trades from local storage (instant load, cloud optional)
   useEffect(() => {
     async function loadTrades() {
-      const loadedTrades = await loadTradesWithFallback();
-      setTrades(loadedTrades);
-      setLoading(false);
+      try {
+        const loaded = await loadTradesWithFallback();
+        setTrades(loaded || []);
+      } catch (e) {
+        console.error('Load error:', e);
+        setTrades([]);
+      } finally {
+        setLoading(false);
+      }
     }
-    loadTrades();
-  }, [user]);
+    
+    // Start load with timeout fallback
+    const timeout = setTimeout(() => {
+      setTrades(localStorageManager.getTrades());
+      setLoading(false);
+    }, 3000);
+    
+    loadTrades().then(() => clearTimeout(timeout));
+  }, []);
 
   const [trades, setTrades] = useState([]);
 

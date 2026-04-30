@@ -15,26 +15,47 @@ const SETTINGS_KEY = 'chronotrade_settings';
 const FREE_TRADE_LIMIT = 10;
 const FREE_TRADE_PERIOD = 30 * 24 * 60 * 60 * 1000;
 
-export async function loadTradesWithFallback() {
+const getLocalTrades = () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const cloudTrades = await supabase
-        .from('trades')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (!cloudTrades.error && cloudTrades.data?.length) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudTrades.data));
-        return cloudTrades.data;
-      }
-    }
-  } catch (e) {
-    console.warn('Cloud load failed, using local storage');
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
   }
-  const localTrades = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  return localTrades;
+};
+
+const setLocalTrades = (trades) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trades.slice(0, 1000)));
+  } catch (e) {
+    console.error('Failed to save trades:', e);
+  }
+};
+
+export async function loadTradesWithFallback() {
+  // Always return local trades first for instant load
+  const local = getLocalTrades();
+  
+  // Try cloud load but don't wait
+  (async () => {
+    try {
+      const { data: { user } } = await supabase?.auth?.getUser?.();
+      if (user) {
+        const cloudTrades = await supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (!cloudTrades.error && cloudTrades.data?.length) {
+          setLocalTrades(cloudTrades.data);
+        }
+      }
+    } catch (e) {
+      console.warn('Cloud load skipped:', e.message);
+    }
+  })();
+  
+  return local;
 }
 
 export async function loadJournalWithFallback() {
