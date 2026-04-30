@@ -126,8 +126,8 @@ export default function AdvancedAnalytics({ trades }) {
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-[1.8rem] border border-white/8 bg-white/[0.03] p-6">
               <h3 className="text-lg font-bold text-white">P&amp;L by strategy</h3>
-              <div className="mt-5 h-72">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="mt-5 h-72 min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                   <BarChart data={metrics.byStrategy}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
                     <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 12 }} />

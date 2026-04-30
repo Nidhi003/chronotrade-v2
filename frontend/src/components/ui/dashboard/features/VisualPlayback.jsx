@@ -138,8 +138,8 @@ export default function VisualPlayback({ trades = [] }) {
             </div>
           </div>
           
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-64 min-h-[200px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
               <AreaChart data={playbackData.slice(0, playbackIndex + 1)}>
                 <defs>
                   <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">

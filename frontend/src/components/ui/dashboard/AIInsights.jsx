@@ -185,8 +185,8 @@ export default function AIInsights() {
             <div className="rounded-[1.8rem] border border-white/8 bg-white/[0.03] p-6">
               <h3 className="text-lg font-bold text-white">Performance radar</h3>
               <p className="mt-2 text-sm text-zinc-500">A quick view of the behavior profile behind your results</p>
-              <div className="mt-6 h-72">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="mt-6 h-72 min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="rgba(255,255,255,0.12)" />
                     <PolarAngleAxis dataKey="subject" tick={{ fill: "#a1a1aa", fontSize: 12 }} />

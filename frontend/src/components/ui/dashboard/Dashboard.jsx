@@ -95,15 +95,38 @@ export default function TradingDashboard() {
   const { theme, toggleTheme } = useTheme();
   const { tier, canAccess } = useSubscription();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedMenu, setSelectedMenu] = useState("Dashboard");
-  const [showTradeForm, setShowTradeForm] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [selectedTrade, setSelectedTrade] = useState(null);
-  const [userName, setUserName] = useState(() => localStorage.getItem('chronotrade_user_name') || '');
+  const [loading, setLoading] = React.useState(true);
+  const [accountBalance, setAccountBalance] = React.useState(10000);
+  const [trades, setTrades] = React.useState([]);
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [selectedMenu, setSelectedMenu] = React.useState("Dashboard");
+  const [showTradeForm, setShowTradeForm] = React.useState(false);
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = React.useState(false);
+  const [showSettings, setShowSettings] = React.useState(false);
+  const [showHelp, setShowHelp] = React.useState(false);
+  const [selectedTrade, setSelectedTrade] = React.useState(null);
+  const [userName, setUserName] = React.useState(() => localStorage.getItem('chronotrade_user_name') || '');
+  const [brokerConnected, setBrokerConnected] = React.useState(() => localStorage.getItem('chronotrade_broker_connected') === 'true');
+
+  // Initialize from localStorage after mount
+  React.useEffect(() => {
+    const savedBalance = parseFloat(localStorage.getItem('chronotrade_balance'));
+    if (savedBalance) setAccountBalance(savedBalance);
+    
+    const loadTrades = async () => {
+      try {
+        const loaded = await loadTradesWithFallback();
+        setTrades(Array.isArray(loaded) ? loaded : []);
+      } catch (e) {
+        console.error('Load error:', e);
+        setTrades([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTrades();
+  }, []);
   
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -131,14 +154,6 @@ export default function TradingDashboard() {
     return () => window.removeEventListener('name-updated', handleNameUpdate);
   }, [userName]);
 
-  const [loading, setLoading] = useState(true);
-  const [accountBalance, setAccountBalance] = useState(() => {
-    return parseFloat(localStorage.getItem('chronotrade_balance')) || 12450;
-  });
-  const [brokerConnected, setBrokerConnected] = useState(() => {
-    return localStorage.getItem('chronotrade_broker_connected') === 'true';
-  });
-
   // Save balance to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('chronotrade_balance', accountBalance.toString());
@@ -160,8 +175,6 @@ export default function TradingDashboard() {
     
     loadTrades();
   }, []);
-
-  const [trades, setTrades] = useState([]);
 
   useEffect(() => {
     const handleImportTrades = (event) => {
@@ -409,8 +422,8 @@ export default function TradingDashboard() {
                       </select>
                     </div>
                   </div>
-                  <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="h-[300px] min-h-[200px] w-full">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <AreaChart data={equityData}>
                         <defs>
                           <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -645,7 +658,7 @@ export default function TradingDashboard() {
 
           {selectedMenu === "Accounts" && (
             <TierGate feature="multiAccount" tierRequired="elite">
-              <MultiAccount trades={trades} accountBalance={parseFloat(localStorage.getItem('chronotrade_account_balance') || 10000)} />
+              <MultiAccount trades={trades} accountBalance={parseFloat(localStorage.getItem('chronotrade_balance') || 10000)} />
             </TierGate>
           )}
         </div>
