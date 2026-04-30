@@ -177,7 +177,7 @@ export default function TradingDashboard() {
   // Calculate equity curve from trades using account balance
   const equityData = React.useMemo(() => {
     const startingBalance = accountBalance || 10000;
-    if (!trades.length) return [{ date: "Now", value: startingBalance }];
+    if (!trades || !trades.length) return [{ date: "Now", value: startingBalance }];
     
     const sortedTrades = [...trades].sort((a, b) => 
       new Date(a.created_at) - new Date(b.created_at)
@@ -819,20 +819,8 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
 // -------------------------------------------------------------------------
 // HEADER COMPONENT
 // -------------------------------------------------------------------------
-const Header = ({ onMenuClick, theme, accountBalance, setAccountBalance, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
+const Header = ({ onMenuClick, theme, accountBalance = 10000, setAccountBalance, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
   const iconButtonClass = "rounded-2xl border border-yellow-200/10 bg-white/[0.03] p-2.5 transition-all hover:bg-white/[0.06]";
-  const [editingBalance, setEditingBalance] = React.useState(false);
-  const [balanceInput, setBalanceInput] = React.useState("10000");
-  
-  React.useEffect(() => {
-    setBalanceInput(String(accountBalance || 10000));
-  }, [accountBalance]);
-  
-  const handleSaveBalance = () => {
-    const newBalance = parseFloat(balanceInput) || 10000;
-    setAccountBalance(newBalance);
-    setEditingBalance(false);
-  };
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between h-16 md:h-20 px-4 md:px-8 backdrop-blur-xl border-b bg-[#050505]/88 border-yellow-200/10">
@@ -854,34 +842,6 @@ const Header = ({ onMenuClick, theme, accountBalance, setAccountBalance, brokerC
           </div>
         </div>
         
-      </div>
-
-      {/* Balance Display/Edit */}
-      <div className="flex items-center gap-2">
-        {editingBalance ? (
-          <div className="flex items-center gap-1">
-            <span className="text-zinc-400">$</span>
-            <input
-              type="number"
-              value={balanceInput}
-              onChange={(e) => setBalanceInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSaveBalance()}
-              onBlur={handleSaveBalance}
-              autoFocus
-              className="w-24 bg-black border border-yellow-300/30 rounded px-2 py-1 text-white text-sm font-bold"
-            />
-          </div>
-        ) : (
-          <button
-            onClick={() => { setBalanceInput(accountBalance.toString()); setEditingBalance(true); }}
-            className="flex items-center gap-1 text-sm font-bold text-blue-300 hover:text-blue-200"
-          >
-            <span>${accountBalance.toLocaleString()}</span>
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-          </button>
-        )}
       </div>
 
       <div className="flex items-center gap-3">
