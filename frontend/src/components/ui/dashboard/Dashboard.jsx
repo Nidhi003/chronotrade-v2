@@ -99,7 +99,11 @@ export default function TradingDashboard() {
   const { tier, canAccess } = useSubscription();
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(true);
-  const [startingBalance, setStartingBalance] = React.useState(() => parseFloat(localStorage.getItem('chronotrade_starting_balance')) || 10000);
+  const [startingBalance, setStartingBalance] = React.useState(() => {
+    const saved = localStorage.getItem('chronotrade_starting_balance');
+    const parsed = parseFloat(saved);
+    return (!isNaN(parsed) && parsed > 0) ? parsed : 10000;
+  });
   const [trades, setTrades] = React.useState([]);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [selectedMenu, setSelectedMenu] = React.useState("Dashboard");
@@ -423,8 +427,8 @@ export default function TradingDashboard() {
                       </select>
                     </div>
                   </div>
-                  <div className="h-[300px] min-h-[200px] w-full">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                  <div style={{ minHeight: '200px', height: '300px' }} className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={equityData}>
                         <defs>
                           <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
