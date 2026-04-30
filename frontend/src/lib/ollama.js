@@ -45,8 +45,13 @@ export async function getAIInsights(tradeHistory) {
 
   const prompt = `Analyze these trades: ${JSON.stringify(tradeHistory)}. Provide JSON only.`;
 
-  const result = await askOllama(prompt, systemPrompt);
-  return JSON.parse(result);
+  try {
+    const result = await askOllama(prompt, systemPrompt);
+    return JSON.parse(result);
+  } catch (error) {
+    console.error('AI insights error:', error.message);
+    throw new Error('AI service unavailable. Make sure Ollama is running locally.');
+  }
 }
 
 export async function getTradingAnalysis(trades) {
@@ -58,7 +63,7 @@ Keep responses brief (2-3 sentences max). Focus on patterns, risk, and improveme
   try {
     return await askOllama(prompt, systemPrompt);
   } catch (error) {
-    console.error('Trading analysis error:', error);
-    throw error;
+    console.error('Trading analysis error:', error.message);
+    throw new Error('AI analysis unavailable. Make sure Ollama is running locally.');
   }
 }
