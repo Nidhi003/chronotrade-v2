@@ -110,9 +110,6 @@ export default function TradingDashboard() {
 
   // Initialize from localStorage after mount
   React.useEffect(() => {
-    const savedBalance = parseFloat(localStorage.getItem('chronotrade_balance'));
-    if (savedBalance) setAccountBalance(savedBalance);
-    
     const loadTrades = async () => {
       try {
         const loaded = await loadTradesWithFallback();
@@ -650,7 +647,7 @@ export default function TradingDashboard() {
 
           {selectedMenu === "Accounts" && (
             <TierGate feature="multiAccount" tierRequired="elite">
-              <MultiAccount trades={trades} accountBalance={parseFloat(localStorage.getItem('chronotrade_balance') || 10000)} />
+              <MultiAccount trades={trades} />
             </TierGate>
           )}
         </div>
@@ -831,7 +828,7 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
 // -------------------------------------------------------------------------
 // HEADER COMPONENT
 // -------------------------------------------------------------------------
-const Header = ({ onMenuClick, theme, accountBalance = 10000, setAccountBalance, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
+const Header = ({ onMenuClick, theme, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
   const iconButtonClass = "rounded-2xl border border-yellow-200/10 bg-white/[0.03] p-2.5 transition-all hover:bg-white/[0.06]";
 
   return (
@@ -996,7 +993,7 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
   const stats = [
     {
       title: "Account Balance",
-      value: `$${(accountBalance || 10000).toLocaleString()}`,
+      value: "$10,000",
       change: "",
       isPositive: true,
       icon: DollarSign,

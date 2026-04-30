@@ -9,7 +9,8 @@ const MOCK_ACCOUNTS = [
   { id: 3, name: 'DemoAccount', broker: 'Demo', balance: 10000, equity: 9800, pnl: -200, drawdown: 3.2, status: 'paused' },
 ];
 
-export default function MultiAccountDashboard({ trades = [], accountBalance = 10000 }) {
+export default function MultiAccountDashboard({ trades = [] }) {
+  const startingBalance = 10000;
   const [customAccounts, setCustomAccounts] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('chronotrade_accounts')) || [];
@@ -22,8 +23,8 @@ export default function MultiAccountDashboard({ trades = [], accountBalance = 10
 
   const liveAccount = useMemo(() => {
     const pnl = trades.reduce((sum, trade) => sum + (parseFloat(trade.pnl) || 0), 0);
-    let peak = accountBalance;
-    let running = accountBalance;
+    let peak = startingBalance;
+    let running = startingBalance;
     let maxDrawdown = 0;
 
     [...trades].reverse().forEach((trade) => {
@@ -36,13 +37,13 @@ export default function MultiAccountDashboard({ trades = [], accountBalance = 10
       id: 'live',
       name: 'ChronoTradez Live Journal',
       broker: 'Local + Cloud',
-      balance: accountBalance,
-      equity: accountBalance + pnl,
+      balance: startingBalance,
+      equity: startingBalance + pnl,
       pnl,
       drawdown: maxDrawdown,
       status: trades.length ? 'active' : 'ready',
     };
-  }, [trades, accountBalance]);
+  }, [trades]);
 
   const accounts = [liveAccount, ...customAccounts];
   
