@@ -144,16 +144,31 @@ export default function TradingDashboard() {
     localStorage.setItem('chronotrade_balance', accountBalance.toString());
   }, [accountBalance]);
 
-  // Load trades from local storage first, then optionally from Supabase
+  // Load trades from cloud first (if authenticated), then fallback to local
   useEffect(() => {
-    function loadTrades() {
-      // Load from local storage (instant)
+    async function loadTrades() {
+      try {
+        // Try cloud first if user is logged in
+        if (user) {
+          const cloudTrades = await fetchTrades();
+          if (cloudTrades?.length) {
+            setTrades(cloudTrades);
+            // Also save to local for offline access
+            localStorageManager.saveTrades(cloudTrades);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Cloud load failed, using local storage');
+      }
+      // Fallback to local storage
       const localTrades = localStorageManager.getTrades();
       setTrades(localTrades);
       setLoading(false);
     }
     loadTrades();
-  }, []);
+  }, [user]);
 
   const [trades, setTrades] = useState([]);
 
