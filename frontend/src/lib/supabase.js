@@ -32,9 +32,7 @@ export async function getUser() {
   return user;
 }
 
-// ====== DATABASE FUNCTIONS ======
-
-function normalizeTradePayload(trade) {
+export function normalizeTradePayload(trade) {
   return {
     symbol: trade.symbol,
     side: trade.side,
@@ -80,7 +78,6 @@ function normalizeTradeUpdates(updates) {
   return payload;
 }
 
-// Trades
 export async function fetchTrades() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -133,7 +130,6 @@ export async function deleteTrade(id) {
   if (error) throw error;
 }
 
-// Journal
 export async function fetchJournal() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');

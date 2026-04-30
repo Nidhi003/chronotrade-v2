@@ -22,7 +22,7 @@ Respond in JSON:
     return JSON.parse(result);
   } catch (e) {
     console.error('Pattern analysis error:', e);
-    return null;
+    throw new Error('Failed to analyze trade patterns');
   }
 }
 

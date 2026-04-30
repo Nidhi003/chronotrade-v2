@@ -9,19 +9,11 @@ const FREE_TRADE_LIMIT = 10;
 const FREE_TRADE_PERIOD = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export const localStorageManager = {
-  // Get all trades from local storage
   getTrades: () => {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) return [];
-      
-      // Try to decrypt if encrypted
-      try {
-        return JSON.parse(data);
-      } catch {
-        const decrypted = securityUtils.decrypt(data);
-        return decrypted || [];
-      }
+      return JSON.parse(data);
     } catch (e) {
       console.error('Error reading trades:', e);
       return [];

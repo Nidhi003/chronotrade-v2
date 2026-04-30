@@ -1,30 +1,10 @@
-import { supabase } from './supabase';
+import { supabase, normalizeTradePayload } from './supabase';
 import localStorageManager from './storage';
 
 const CLOUD_SYNC_KEY = 'chronotrade_cloud_enabled';
 
 function toCloudTrade(trade, userId) {
-  return {
-    user_id: userId,
-    symbol: trade.symbol,
-    side: trade.side,
-    entry_price: trade.entry_price ?? trade.entryPrice ?? null,
-    exit_price: trade.exit_price ?? trade.exitPrice ?? null,
-    quantity: trade.quantity ?? null,
-    pnl: trade.pnl ?? 0,
-    status: trade.status ?? ((trade.pnl ?? 0) >= 0 ? 'WIN' : 'LOSS'),
-    strategy: trade.strategy,
-    notes: trade.notes,
-    risk_amount: trade.risk_amount ?? trade.riskAmount ?? null,
-    swap_fee: trade.swap_fee ?? trade.swapFee ?? null,
-    commission: trade.commission ?? null,
-    timeframe: trade.timeframe ?? null,
-    confidence: trade.confidence ?? null,
-    synced: true,
-    cloud_id: String(trade.cloud_id ?? trade.id),
-    imported: !!trade.imported,
-    created_at: trade.created_at ?? new Date().toISOString(),
-  };
+  return { ...normalizeTradePayload(trade), user_id: userId, synced: true, cloud_id: String(trade.cloud_id ?? trade.id), imported: !!trade.imported };
 }
 
 export const cloudSync = {
