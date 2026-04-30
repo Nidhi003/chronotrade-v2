@@ -213,23 +213,6 @@ export default function TradingDashboard() {
     });
   }, [trades, startingBalance]);
 
-  // Legacy equityData for backward compatibility
-  const equityDataOld = React.useMemo(() => {
-    
-    const sortedTrades = [...trades].sort((a, b) => 
-      new Date(a.created_at) - new Date(b.created_at)
-    );
-    
-    let cumulative = startingBalance;
-    return sortedTrades.slice(0, 15).map(t => {
-      cumulative += t.pnl || 0;
-      return { 
-        date: new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 
-        value: cumulative 
-      };
-    });
-  }, [trades]);
-
   // Calculate strategy data from actual trades
   const strategyData = React.useMemo(() => {
     const strategies = {};
