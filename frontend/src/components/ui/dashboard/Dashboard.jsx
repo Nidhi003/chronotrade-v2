@@ -821,11 +821,15 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
 // -------------------------------------------------------------------------
 const Header = ({ onMenuClick, theme, accountBalance, setAccountBalance, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
   const iconButtonClass = "rounded-2xl border border-yellow-200/10 bg-white/[0.03] p-2.5 transition-all hover:bg-white/[0.06]";
-  const [editingBalance, setEditingBalance] = useState(false);
-  const [balanceInput, setBalanceInput] = useState(accountBalance.toString());
+  const [editingBalance, setEditingBalance] = React.useState(false);
+  const [balanceInput, setBalanceInput] = React.useState("10000");
+  
+  React.useEffect(() => {
+    setBalanceInput(String(accountBalance || 10000));
+  }, [accountBalance]);
   
   const handleSaveBalance = () => {
-    const newBalance = parseFloat(balanceInput) || accountBalance;
+    const newBalance = parseFloat(balanceInput) || 10000;
     setAccountBalance(newBalance);
     setEditingBalance(false);
   };
