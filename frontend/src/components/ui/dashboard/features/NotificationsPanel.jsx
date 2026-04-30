@@ -14,7 +14,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import localStorageManager from "@/lib/storage";
+import localStorageManager, { loadTradesWithFallback } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
 
 const NOTIFICATION_TYPES = {
@@ -243,9 +243,9 @@ export default function NotificationsPanel({ isOpen, onClose, theme = "dark" }) 
     if (!isOpen) return;
 
     const loadTrades = async () => {
-      const localTrades = localStorageManager.getTrades();
-      setRealtimeTrades(localTrades);
-      setNotifications(generateNotifications(localTrades));
+      const trades = await loadTradesWithFallback();
+      setRealtimeTrades(trades);
+      setNotifications(generateNotifications(trades));
     };
     loadTrades();
 

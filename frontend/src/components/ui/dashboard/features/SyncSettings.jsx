@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Cloud, CloudOff, RefreshCw, Check, X, Download, Upload, Trash2, AlertCircle, Shield, Eye, EyeOff, Loader2 } from "lucide-react";
-import localStorageManager from "@/lib/storage";
+import localStorageManager, { loadTradesWithFallback } from "@/lib/storage";
 import securityUtils from "@/lib/security";
 import cloudSync from "@/lib/cloudSync";
 import { useAuth } from "@/context/AuthContext";
@@ -22,17 +22,20 @@ export default function SyncSettings() {
   const [showSecurityOptions, setShowSecurityOptions] = useState(false);
 
   useEffect(() => {
-    const trades = localStorageManager.getTrades();
-    const unsynced = localStorageManager.getUnsyncedTrades();
-    const status = localStorageManager.getSyncStatus();
-    const cloudEnabled = cloudSync.isCloudEnabled();
-    
-    setSyncStatus({
-      ...status,
-      pendingCount: unsynced.length,
-      totalTrades: trades.length,
-      enabled: cloudEnabled && isAuthenticated
-    });
+    async function loadStatus() {
+      const trades = await loadTradesWithFallback();
+      const unsynced = trades.filter(t => !t.synced);
+      const status = localStorageManager.getSyncStatus();
+      const cloudEnabled = cloudSync.isCloudEnabled();
+      
+      setSyncStatus({
+        ...status,
+        pendingCount: unsynced.length,
+        totalTrades: trades.length,
+        enabled: cloudEnabled && isAuthenticated
+      });
+    }
+    if (isAuthenticated) loadStatus();
   }, [isAuthenticated]);
 
   const handleSync = async () => {
@@ -46,8 +49,8 @@ export default function SyncSettings() {
       const result = await cloudSync.syncToCloud(user.id);
       setMessage({ type: 'success', text: `Synced ${result.synced} trades to cloud!` });
       
-      const trades = localStorageManager.getTrades();
-      const unsynced = localStorageManager.getUnsyncedTrades();
+      const trades = await loadTradesWithFallback();
+      const unsynced = trades.filter(t => !t.synced);
       setSyncStatus(prev => ({
         ...prev,
         pendingCount: unsynced.length,

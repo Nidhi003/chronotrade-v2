@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { fetchJournal, addJournalEntry, deleteJournalEntry } from "@/lib/supabase";
+import { loadJournalWithFallback, saveJournalToCloud, deleteJournalFromCloud } from "@/lib/storage";
 
 const emotionLabels = [
   { value: 1, label: "Frustrated", tone: "text-rose-300", chip: "bg-rose-500/12 border-rose-500/20" },
@@ -46,17 +46,10 @@ export default function JournalPage() {
 
   useEffect(() => {
     async function loadJournal() {
-      try {
-        const data = await fetchJournal();
-        setJournalEntries(data || []);
-      } catch (e) {
-        console.error("Failed to load journal:", e);
-        setJournalEntries([]);
-      } finally {
-        setLoading(false);
-      }
+      const entries = await loadJournalWithFallback();
+      setJournalEntries(entries);
+      setLoading(false);
     }
-
     loadJournal();
   }, []);
 
@@ -90,8 +83,7 @@ export default function JournalPage() {
       return;
     }
 
-    try {
-      const saved = await addJournalEntry({
+    const saved = await saveJournalToCloud({
         title: newEntry.title,
         content: newEntry.content,
         mood_before: newEntry.emotion,
@@ -99,32 +91,16 @@ export default function JournalPage() {
         tags: newEntry.tags,
       });
       setJournalEntries((prev) => [saved, ...prev]);
-    } catch (e) {
-      console.error("Failed to save:", e);
-      setJournalEntries((prev) => [
-        {
-          ...newEntry,
-          id: Date.now(),
-          mood_before: newEntry.emotion,
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+
+      setShowNewEntry(false);
+      setNewEntry({ title: "", emotion: null, tags: [], content: "" });
     }
 
-    setShowNewEntry(false);
-    setNewEntry({ title: "", emotion: null, tags: [], content: "" });
-  };
-
-  const handleDeleteEntry = async (id) => {
-    if (!confirm("Delete this entry?")) return;
-    try {
-      await deleteJournalEntry(id);
-    } catch (e) {
-      console.error("Failed to delete:", e);
-    }
-    setJournalEntries((prev) => prev.filter((entry) => entry.id !== id));
-  };
+    const handleDeleteEntry = async (id) => {
+      if (!confirm("Delete this entry?")) return;
+      await deleteJournalFromCloud(id);
+      setJournalEntries((prev) => prev.filter((entry) => entry.id !== id));
+    };
 
   if (loading) {
     return (

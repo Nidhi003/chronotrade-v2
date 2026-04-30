@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Search, Trash2, X, Loader2 } from "lucide-react";
-import { fetchJournal, addJournalEntry, deleteJournalEntry } from '@/lib/supabase';
+import { addJournalEntry, deleteJournalEntry } from '@/lib/supabase';
+import { loadJournalWithFallback, saveJournalToCloud, deleteJournalFromCloud } from '@/lib/storage';
 
 export default function JournalPage() {
   const navigate = useNavigate();
@@ -16,15 +17,9 @@ export default function JournalPage() {
 
   useEffect(() => {
     async function loadJournal() {
-      try {
-        const data = await fetchJournal();
-        setJournalEntries(data || []);
-      } catch (e) {
-        console.error('Failed to load journal:', e);
-        setJournalEntries([]);
-      } finally {
-        setLoading(false);
-      }
+      const entries = await loadJournalWithFallback();
+      setJournalEntries(entries);
+      setLoading(false);
     }
     loadJournal();
   }, []);
@@ -34,30 +29,22 @@ export default function JournalPage() {
       alert("Please fill in title and emotion");
       return;
     }
-    try {
-      const saved = await addJournalEntry({
-        title: newEntry.title,
-        content: newEntry.content,
-        mood_before: newEntry.emotion,
-        mood_after: newEntry.emotion,
-        tags: newEntry.tags,
-      });
-      setJournalEntries([saved, ...journalEntries]);
-    } catch (e) {
-      console.error('Failed to save:', e);
-      setJournalEntries([{ ...newEntry, id: Date.now() }, ...journalEntries]);
-    }
+    const entry = {
+      title: newEntry.title,
+      content: newEntry.content,
+      mood_before: newEntry.emotion,
+      mood_after: newEntry.emotion,
+      tags: newEntry.tags,
+    };
+    const saved = await saveJournalToCloud(entry);
+    setJournalEntries([saved, ...journalEntries]);
     setShowNewEntry(false);
     setNewEntry({ title: "", emotion: null, tags: [], content: "", linkedTrades: [] });
   };
 
   const handleDeleteEntry = async (id) => {
     if (!confirm("Delete this entry?")) return;
-    try {
-      await deleteJournalEntry(id);
-    } catch (e) {
-      console.error('Failed to delete:', e);
-    }
+    await deleteJournalFromCloud(id);
     setJournalEntries(journalEntries.filter(e => e.id !== id));
   };
 

@@ -1,12 +1,97 @@
-// Local Storage Manager with Security
-import securityUtils from './security';
+import { supabase } from './supabase';
 
 const STORAGE_KEY = 'chronotrade_trades';
 const SYNC_STATUS_KEY = 'chronotrade_sync_status';
 const TRADE_LIMIT_KEY = 'chronotrade_trade_limits';
+const JOURNAL_KEY = 'chronotrade_journal';
+const MOOD_KEY = 'chronotrade_mood';
+const ACCOUNTS_KEY = 'chronotrade_accounts';
+const SETTINGS_KEY = 'chronotrade_settings';
 
 const FREE_TRADE_LIMIT = 10;
-const FREE_TRADE_PERIOD = 30 * 24 * 60 * 60 * 1000; // 30 days
+const FREE_TRADE_PERIOD = 30 * 24 * 60 * 60 * 1000;
+
+export async function loadTradesWithFallback() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const cloudTrades = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (!cloudTrades.error && cloudTrades.data?.length) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudTrades.data));
+        return cloudTrades.data;
+      }
+    }
+  } catch (e) {
+    console.warn('Cloud load failed, using local storage');
+  }
+  const localTrades = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  return localTrades;
+}
+
+export async function loadJournalWithFallback() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const cloudJournal = await supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (!cloudJournal.error && cloudJournal.data?.length) {
+        localStorage.setItem(JOURNAL_KEY, JSON.stringify(cloudJournal.data));
+        return cloudJournal.data;
+      }
+    }
+  } catch (e) {
+    console.warn('Cloud journal load failed, using local');
+  }
+  return JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+}
+
+export async function saveJournalToCloud(entry) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+    
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .insert([{ ...entry, user_id: user.id }])
+      .select()
+      .single();
+    
+    if (!error && data) {
+      const existing = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+      localStorage.setItem(JOURNAL_KEY, JSON.stringify([data, ...existing]));
+      return data;
+    }
+  } catch (e) {
+    console.error('Cloud journal save failed:', e);
+  }
+  const localEntry = { ...entry, id: entry.id || crypto.randomUUID(), created_at: new Date().toISOString() };
+  const existing = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+  localStorage.setItem(JOURNAL_KEY, JSON.stringify([localEntry, ...existing]));
+  return localEntry;
+}
+
+export async function deleteJournalFromCloud(id) {
+  try {
+    const { error } = await supabase.from('journal_entries').delete().eq('id', id);
+    if (!error) {
+      const existing = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+      localStorage.setItem(JOURNAL_KEY, JSON.stringify(existing.filter(e => e.id !== id)));
+    }
+  } catch (e) {
+    console.warn('Cloud journal delete failed, local only');
+    const existing = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+    localStorage.setItem(JOURNAL_KEY, JSON.stringify(existing.filter(e => e.id !== id)));
+  }
+}
 
 export const localStorageManager = {
   getTrades: () => {

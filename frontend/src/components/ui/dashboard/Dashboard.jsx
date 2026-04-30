@@ -56,7 +56,7 @@ import TradeDetailPanel from './TradeDetailPanel';
 import JournalPage from "./Journal";
 import { PDFReports, MonteCarloSimulation, EliteProDashboard, MarketRegimeTags, MultiAccount } from './features';
 import { TradingPsychologyScore, TradeCalendar, SessionAnalysis, BrokerImport, SyncSettings, TierGate, Support } from './features';
-import localStorageManager from '@/lib/storage';
+import localStorageManager, { loadTradesWithFallback } from '@/lib/storage';
 import NotificationsPanel from './features/NotificationsPanel';
 import SettingsModal from './features/SettingsModal';
 import HelpModal from './features/HelpModal';
@@ -147,24 +147,8 @@ export default function TradingDashboard() {
   // Load trades from cloud first (if authenticated), then fallback to local
   useEffect(() => {
     async function loadTrades() {
-      try {
-        // Try cloud first if user is logged in
-        if (user) {
-          const cloudTrades = await fetchTrades();
-          if (cloudTrades?.length) {
-            setTrades(cloudTrades);
-            // Also save to local for offline access
-            localStorageManager.saveTrades(cloudTrades);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn('Cloud load failed, using local storage');
-      }
-      // Fallback to local storage
-      const localTrades = localStorageManager.getTrades();
-      setTrades(localTrades);
+      const loadedTrades = await loadTradesWithFallback();
+      setTrades(loadedTrades);
       setLoading(false);
     }
     loadTrades();
