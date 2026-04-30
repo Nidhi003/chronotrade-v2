@@ -98,12 +98,14 @@ export default function TradingDashboard() {
   const { theme, toggleTheme } = useTheme();
   const { tier, canAccess } = useSubscription();
   const navigate = useNavigate();
+  const DEFAULT_BALANCE = 10000;
   const [loading, setLoading] = React.useState(true);
   const [startingBalance, setStartingBalance] = React.useState(() => {
     const saved = localStorage.getItem('chronotrade_starting_balance');
     const parsed = parseFloat(saved);
-    return (!isNaN(parsed) && parsed > 0) ? parsed : 10000;
+    return (!isNaN(parsed) && parsed > 0) ? parsed : DEFAULT_BALANCE;
   });
+  const effectiveBalance = startingBalance || DEFAULT_BALANCE;
   const [trades, setTrades] = React.useState([]);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [selectedMenu, setSelectedMenu] = React.useState("Dashboard");
@@ -196,18 +198,18 @@ export default function TradingDashboard() {
   // Calculate current account balance from trades
   const accountBalance = React.useMemo(() => {
     const totalPnl = trades.reduce((sum, trade) => sum + (parseFloat(trade.pnl) || 0), 0);
-    return startingBalance + totalPnl;
-  }, [trades, startingBalance]);
+    return effectiveBalance + totalPnl;
+  }, [trades, effectiveBalance]);
 
   // Calculate equity curve from trades
   const equityData = React.useMemo(() => {
-    if (!trades || !trades.length) return [{ date: "Now", value: startingBalance }];
+    if (!trades || !trades.length) return [{ date: "Now", value: effectiveBalance }];
     
     const sortedTrades = [...trades].sort((a, b) => 
       new Date(a.created_at) - new Date(b.created_at)
     );
     
-    let cumulative = startingBalance;
+    let cumulative = effectiveBalance;
     return sortedTrades.slice(0, 15).map(t => {
       cumulative += t.pnl || 0;
       return { 
@@ -215,7 +217,7 @@ export default function TradingDashboard() {
         value: cumulative 
       };
     });
-  }, [trades, startingBalance]);
+  }, [trades, effectiveBalance]);
 
   // Calculate strategy data from actual trades
   const strategyData = React.useMemo(() => {
@@ -360,7 +362,7 @@ export default function TradingDashboard() {
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
             theme={theme} 
             accountBalance={accountBalance}
-            startingBalance={startingBalance}
+            startingBalance={effectiveBalance}
             setStartingBalance={setStartingBalance}
             brokerConnected={brokerConnected}
             showNotifications={showNotifications}
@@ -1052,7 +1054,7 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
   const stats = [
     {
       title: "Starting Balance",
-      value: `$${startingBalance.toLocaleString()}`,
+      value: `$${effectiveBalance.toLocaleString()}`,
       change: "",
       isPositive: true,
       icon: DollarSign,
