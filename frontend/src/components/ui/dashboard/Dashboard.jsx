@@ -563,9 +563,9 @@ export default function TradingDashboard() {
                 </motion.div>
               )}
 
-              <div className="mt-8"> 
+              <motion.div 
                 variants={itemVariants}
-                className={getGlassClass2(theme)}
+                className={`mt-8 ${getGlassClass2(theme)}`}
               >
                 <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
