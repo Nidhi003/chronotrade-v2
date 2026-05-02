@@ -57,7 +57,7 @@ const PLANS = [
 ];
 
 export default function Subscribe() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { subscribe, tier } = useSubscription();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -73,6 +73,8 @@ export default function Subscribe() {
     const plan = PLANS.find(p => p.id === planId);
     if (!plan) return;
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
     const SUBSCRIPTION_LINKS = {
       "pro-monthly": "https://rzp.io/rzp/q5ZORjE",
       "elite-monthly": "https://rzp.io/rzp/tPkGexc",
@@ -84,7 +86,19 @@ export default function Subscribe() {
       const linkKey = `${planId}-${billing}`;
       const link = SUBSCRIPTION_LINKS[linkKey];
       if (link) {
-        await subscribe(planId);
+        try {
+          await fetch(`${API_URL}/api/update-tier`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ tier: planId, billing }),
+          });
+          await subscribe(planId);
+        } catch (err) {
+          console.error("Failed to update tier:", err);
+        }
         window.open(link, "_blank");
         navigate("/dashboard");
         return;

@@ -366,6 +366,37 @@ app.post('/api/journal', apiLimiter, async (req, res) => {
   }
 });
 
+// Update subscription tier
+app.post('/api/update-tier', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (!user) return res.status(401).json({ error: 'Invalid user' });
+    
+    const { tier, billing } = req.body;
+    if (!['pro', 'elite', 'free'].includes(tier)) {
+      return res.status(400).json({ error: 'Invalid tier' });
+    }
+    
+    // Update user metadata
+    const { error } = await supabase.auth.admin.updateUserById(user.id, {
+      user_metadata: { 
+        subscription_tier: tier, 
+        billing_cycle: billing || 'monthly',
+        subscription_date: new Date().toISOString()
+      }
+    });
+    
+    if (error) throw error;
+    res.json({ success: true, tier });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Subscriptions
 app.post('/api/stripe/checkout', async (req, res) => {
   try {
