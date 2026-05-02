@@ -73,11 +73,22 @@ export default function Subscribe() {
     const plan = PLANS.find(p => p.id === planId);
     if (!plan) return;
 
-    if (planId === "pro") {
-      await subscribe(planId);
-      window.open("https://rzp.io/rzp/q5ZORjE", "_blank");
-      navigate("/dashboard");
-      return;
+    const SUBSCRIPTION_LINKS = {
+      "pro-monthly": "https://rzp.io/rzp/q5ZORjE",
+      "elite-monthly": "https://rzp.io/rzp/tPkGexc",
+      "pro-yearly": "https://rzp.io/rzp/JI8G17wV",
+      "elite-yearly": "https://rzp.io/rzp/Gu6BimP5",
+    };
+
+    if (planId !== "free") {
+      const linkKey = `${planId}-${billing}`;
+      const link = SUBSCRIPTION_LINKS[linkKey];
+      if (link) {
+        await subscribe(planId);
+        window.open(link, "_blank");
+        navigate("/dashboard");
+        return;
+      }
     }
 
     setLoading(true);
