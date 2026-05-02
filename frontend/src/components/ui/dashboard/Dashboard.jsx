@@ -35,6 +35,7 @@ import {
   Lock,
   LifeBuoy,
   Flame,
+  Sparkles,
   BarChart3,
   Clock,
   Play,
@@ -414,48 +415,71 @@ export default function TradingDashboard() {
 
               {/* Plan Features Overview */}
               <motion.div variants={itemVariants} className="rounded-[1.8rem] border border-yellow-200/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Plan Features</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-3">Free</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <Check className="h-4 w-4 text-emerald-400" /> Dashboard
+                <h3 className="text-lg font-bold text-white mb-2">Unlock powerful trading tools</h3>
+                <p className="text-sm text-zinc-400 mb-6">See what you're missing — upgrade anytime to accelerate your trading growth.</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="rounded-2xl border border-yellow-200/20 bg-gradient-to-br from-yellow-200/[0.06] to-black p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-200/10">
+                          <Crown className="h-5 w-5 text-yellow-300" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-white">Pro Plan</div>
+                          <div className="text-xs text-zinc-500">₹1500/month or ₹15000/year</div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <Check className="h-4 w-4 text-emerald-400" /> Journal
-                      </div>
+                      <button onClick={() => navigate('/subscribe')} className="rounded-full bg-yellow-200 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-black transition hover:bg-yellow-100">
+                        Upgrade
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {[
+                        { icon: Calendar, label: "Trade Calendar", desc: "Visualize your daily P&L across a calendar view to spot your best and worst trading days" },
+                        { icon: BarChart3, label: "Advanced Analytics", desc: "Deep-dive into your performance with equity curves, strategy breakdowns, and win-rate trends" },
+                        { icon: Download, label: "PDF Reports", desc: "Export professional trading reports to share with mentors, prop firms, or for tax records" },
+                        { icon: Target, label: "Setup Performance", desc: "Track which setups make you money and which ones bleed — optimize your edge with data" },
+                      ].map((feature) => (
+                        <div key={feature.label} className="flex items-start gap-3">
+                          <feature.icon className="h-5 w-5 text-yellow-300 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-semibold text-zinc-200">{feature.label}</div>
+                            <div className="text-xs text-zinc-500">{feature.desc}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-yellow-200/20 bg-yellow-200/[0.04] p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-yellow-200/60 mb-3">Pro — ₹1500/mo</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <Calendar className="h-4 w-4 text-yellow-300" /> Calendar
+
+                  <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/[0.06] to-black p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10">
+                          <Gem className="h-5 w-5 text-purple-400" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-white">Elite Plan</div>
+                          <div className="text-xs text-zinc-500">₹3000/month or ₹30000/year</div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <BarChart3 className="h-4 w-4 text-yellow-300" /> Analytics
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <Download className="h-4 w-4 text-yellow-300" /> Reports
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <Target className="h-4 w-4 text-yellow-300" /> Setups
-                      </div>
+                      <button onClick={() => navigate('/subscribe')} className="rounded-full bg-purple-500 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-white transition hover:bg-purple-400">
+                        Upgrade
+                      </button>
                     </div>
-                  </div>
-                  <div className="rounded-2xl border border-purple-500/20 bg-purple-500/[0.04] p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-purple-400/60 mb-3">Elite — ₹3000/mo</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <Brain className="h-4 w-4 text-purple-400" /> Psychology
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <Wallet className="h-4 w-4 text-purple-400" /> Accounts
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-zinc-300">
-                        <Gem className="h-4 w-4 text-purple-400" /> Everything in Pro
-                      </div>
+                    <div className="space-y-3">
+                      {[
+                        { icon: Brain, label: "Psychology Score", desc: "Track your emotional patterns, discipline rating, and mental drift to master your trading psychology" },
+                        { icon: Wallet, label: "Multi-Account Management", desc: "Manage multiple trading accounts — personal, prop firm, or funded — in one unified dashboard" },
+                        { icon: Sparkles, label: "Everything in Pro", desc: "Calendar, Analytics, Reports, Setups — plus all Elite-only features at a lower effective monthly cost" },
+                      ].map((feature) => (
+                        <div key={feature.label} className="flex items-start gap-3">
+                          <feature.icon className="h-5 w-5 text-purple-400 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-semibold text-zinc-200">{feature.label}</div>
+                            <div className="text-xs text-zinc-500">{feature.desc}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
