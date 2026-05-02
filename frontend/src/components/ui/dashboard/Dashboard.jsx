@@ -105,7 +105,6 @@ export default function TradingDashboard() {
     const parsed = parseFloat(saved);
     return (!isNaN(parsed) && parsed > 0) ? parsed : DEFAULT_BALANCE;
   });
-  const effectiveBalance = DEFAULT_BALANCE;
   const [trades, setTrades] = React.useState([]);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [selectedMenu, setSelectedMenu] = React.useState("Dashboard");
@@ -197,13 +196,13 @@ export default function TradingDashboard() {
 
   // Calculate equity curve from trades
   const equityData = React.useMemo(() => {
-    if (!trades || !trades.length) return [{ date: "Now", value: effectiveBalance }];
+    if (!trades || !trades.length) return [{ date: "Now", value: DEFAULT_BALANCE }];
     
     const sortedTrades = [...trades].sort((a, b) => 
       new Date(a.created_at) - new Date(b.created_at)
     );
     
-    let cumulative = effectiveBalance;
+    let cumulative = DEFAULT_BALANCE;
     return sortedTrades.slice(0, 15).map(t => {
       cumulative += t.pnl || 0;
       return { 
@@ -211,7 +210,7 @@ export default function TradingDashboard() {
         value: cumulative 
       };
     });
-  }, [trades, effectiveBalance]);
+  }, [trades, DEFAULT_BALANCE]);
 
   // Calculate strategy data from actual trades
   const strategyData = React.useMemo(() => {
@@ -355,7 +354,7 @@ export default function TradingDashboard() {
         <Header 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
             theme={theme} 
-            startingBalance={effectiveBalance}
+            startingBalance={DEFAULT_BALANCE}
             setStartingBalance={setStartingBalance}
             brokerConnected={brokerConnected}
             showNotifications={showNotifications}
@@ -1040,7 +1039,7 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
   const stats = [
     {
       title: "Starting Balance",
-      value: `$${effectiveBalance.toLocaleString()}`,
+      value: `$${DEFAULT_BALANCE.toLocaleString()}`,
       change: "",
       isPositive: true,
       icon: DollarSign,
