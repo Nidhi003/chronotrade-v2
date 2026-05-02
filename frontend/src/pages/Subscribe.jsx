@@ -95,7 +95,7 @@ export default function Subscribe() {
       const { order_id } = await orderResponse.json();
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SkanseMumxtVBq",
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SkbD1c5YkSnmcG",
         amount: amountInCents,
         currency: "USD",
         name: "ChronoTradez",
