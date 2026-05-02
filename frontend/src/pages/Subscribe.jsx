@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, CreditCard, Crown, Rocket, Shield, Zap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useToast } from "@/components/ui/Toast";
 
 const PLANS = [
   {
@@ -59,6 +60,7 @@ const PLANS = [
 export default function Subscribe() {
   const { user, session } = useAuth();
   const { subscribe, tier } = useSubscription();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [billing, setBilling] = useState("monthly");
@@ -153,10 +155,11 @@ export default function Subscribe() {
             }
 
             await subscribe(planId);
+            showToast("Payment successful! Welcome to " + plan.name, "success");
             navigate("/dashboard");
           } catch (err) {
             console.error("Payment verification error:", err);
-            alert("Payment verification failed: " + err.message);
+            showToast("Payment verification failed: " + err.message, "error");
           }
         },
         prefill: {
@@ -174,12 +177,12 @@ export default function Subscribe() {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', (response) => {
         console.error("Payment failed:", response.error);
-        alert("Payment failed: " + response.error.description);
+        showToast("Payment failed: " + response.error.description, "error");
       });
       rzp.open();
     } catch (e) {
       console.error("Payment error:", e);
-      alert("Payment error: " + e.message);
+      showToast("Payment error: " + e.message, "error");
     } finally {
       setLoading(false);
     }

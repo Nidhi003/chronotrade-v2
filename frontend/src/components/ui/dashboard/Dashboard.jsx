@@ -890,6 +890,7 @@ const Header = ({ onMenuClick, theme, brokerConnected, showNotifications, setSho
                 isOpen={showNotifications} 
                 onClose={() => setShowNotifications(false)}
                 theme={theme}
+                user={user}
               />
             )}
           </AnimatePresence>

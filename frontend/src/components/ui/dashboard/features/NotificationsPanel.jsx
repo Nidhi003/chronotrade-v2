@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   Award,
   Bell,
-  Calendar,
   CheckCircle2,
   Clock,
   Minus,
@@ -37,11 +36,6 @@ const NOTIFICATION_TYPES = {
     icon: TrendingUp,
     tone: "emerald",
     label: "Execution",
-  },
-  ECONOMIC_EVENT: {
-    icon: Calendar,
-    tone: "sky",
-    label: "Calendar",
   },
   JOURNAL_REMINDER: {
     icon: Clock,
@@ -89,21 +83,24 @@ function calculateStreak(trades, direction) {
   return streak;
 }
 
-function getUpcomingEconomicEvents() {
-  const now = new Date();
-  const events = [
-    { title: "FOMC Rate Decision", time: new Date(now.getTime() + 24 * 60 * 60 * 1000), impact: "high" },
-    { title: "NFP Release", time: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), impact: "high" },
-    { title: "CPI Data", time: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000), impact: "medium" },
-  ];
-  return events.filter((event) => event.time > now && event.impact === "high");
-}
-
 function generateNotifications(trades = null) {
   const tradesData = trades || localStorageManager.getTrades();
   const journalEntries = localStorageManager.getJournalEntries ? localStorageManager.getJournalEntries() : [];
   const alerts = [];
   const now = new Date();
+
+  if (!tradesData || tradesData.length === 0) {
+    alerts.push({
+      id: `welcome_${Date.now()}`,
+      type: "JOURNAL_REMINDER",
+      title: "Start logging your trades",
+      message: "Your first logged trade unlocks performance tracking, streak alerts, and risk insights.",
+      priority: "low",
+      timestamp: now.toISOString(),
+    });
+    return alerts;
+  }
+
   const sortedTrades = [...tradesData].sort((a, b) => new Date(getTradeTimestamp(b)) - new Date(getTradeTimestamp(a)));
   const recentTrades = sortedTrades.slice(0, 12);
   const winningStreak = calculateStreak(recentTrades, "win");
@@ -138,7 +135,7 @@ function generateNotifications(trades = null) {
       alerts.push({
         id: `loss_${Date.now()}`,
         type: "LARGE_LOSS",
-        title: `$${Math.abs(pnl).toFixed(2)} loss booked`,
+        title: `₹${Math.abs(pnl).toFixed(2)} loss booked`,
         message: pnl <= -500
           ? "This loss is large relative to a normal journal event. Review thesis quality and position size before continuing."
           : "Journal the setup failure while it is still precise.",
@@ -151,7 +148,7 @@ function generateNotifications(trades = null) {
       alerts.push({
         id: `win_${Date.now()}`,
         type: "LARGE_WIN",
-        title: `$${pnl.toFixed(2)} winner closed`,
+        title: `₹${pnl.toFixed(2)} winner closed`,
         message: "Log what made this trade work so the edge is reviewable rather than anecdotal.",
         priority: "low",
         timestamp: getTradeTimestamp(lastTrade),
@@ -159,9 +156,9 @@ function generateNotifications(trades = null) {
     }
   }
 
-  const baselineWinRate = calculateWinRate(trades);
+  const baselineWinRate = calculateWinRate(tradesData);
   const recentWinRate = calculateWinRate(recentTrades);
-  if (trades.length >= 10 && recentWinRate < baselineWinRate - 10) {
+  if (tradesData.length >= 10 && recentWinRate < baselineWinRate - 10) {
     alerts.push({
       id: `winrate_${Date.now()}`,
       type: "WIN_RATE_CHANGE",
@@ -172,12 +169,12 @@ function generateNotifications(trades = null) {
     });
   }
 
-  const losingTrades = trades.filter((trade) => Number(trade.pnl || 0) < 0);
-  const cumulativePnl = trades.reduce((sum, trade) => sum + Number(trade.pnl || 0), 0);
+  const losingTrades = tradesData.filter((trade) => Number(trade.pnl || 0) < 0);
+  const cumulativePnl = tradesData.reduce((sum, trade) => sum + Number(trade.pnl || 0), 0);
   const worstLoss = losingTrades.length ? Math.min(...losingTrades.map((trade) => Number(trade.pnl || 0))) : 0;
   const capitalBase = Math.max(250, Math.abs(cumulativePnl));
   const drawdownPct = Math.abs(worstLoss) / capitalBase * 100;
-  if (trades.length >= 5 && drawdownPct >= 20) {
+  if (tradesData.length >= 5 && drawdownPct >= 20) {
     alerts.push({
       id: `drawdown_${Date.now()}`,
       type: "DRAWDOWN_ALERT",
@@ -203,18 +200,6 @@ function generateNotifications(trades = null) {
     });
   }
 
-  const upcomingEvents = getUpcomingEconomicEvents();
-  if (upcomingEvents.length) {
-    alerts.push({
-      id: `calendar_${Date.now()}`,
-      type: "ECONOMIC_EVENT",
-      title: `${upcomingEvents.length} high-impact events ahead`,
-      message: upcomingEvents.map((event) => event.title).join(", "),
-      priority: "medium",
-      timestamp: now.toISOString(),
-    });
-  }
-
   return alerts.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 }
 
@@ -232,34 +217,56 @@ function getTimeAgo(timestamp) {
   return `${diffDays}d ago`;
 }
 
-export default function NotificationsPanel({ isOpen, onClose, theme = "dark" }) {
+export default function NotificationsPanel({ isOpen, onClose, theme = "dark", user }) {
   const [notifications, setNotifications] = useState([]);
   const [lastChecked, setLastChecked] = useState(null);
   const [realtimeTrades, setRealtimeTrades] = useState([]);
   const isDark = theme === "dark";
 
-  // Load initial trades + subscribe to realtime changes
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const loadTrades = async () => {
+  const loadTradesAndGenerate = async () => {
+    if (!user) {
       const trades = await loadTradesWithFallback();
       setRealtimeTrades(trades);
       setNotifications(generateNotifications(trades));
-    };
-    loadTrades();
+      return;
+    }
 
-    // Subscribe to realtime trade changes
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      const trades = await loadTradesWithFallback();
+      setRealtimeTrades(trades);
+      setNotifications(generateNotifications(trades));
+      return;
+    }
+
+    const { data: trades, error } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && trades) {
+      setRealtimeTrades(trades);
+      setNotifications(generateNotifications(trades));
+    } else {
+      const trades = await loadTradesWithFallback();
+      setRealtimeTrades(trades);
+      setNotifications(generateNotifications(trades));
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    loadTradesAndGenerate();
+
     const channel = supabase
-      .channel('trades-changes')
+      .channel('notifications-trades-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'trades' },
-        (payload) => {
-          // Refesh trades and regenerate notifications
-          const updatedTrades = localStorageManager.getTrades();
-          setRealtimeTrades(updatedTrades);
-          setNotifications(generateNotifications(updatedTrades));
+        () => {
+          loadTradesAndGenerate();
         }
       )
       .subscribe();
@@ -267,7 +274,7 @@ export default function NotificationsPanel({ isOpen, onClose, theme = "dark" }) 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   const unreadCount = notifications.length;
   const highPriorityCount = notifications.filter((notification) => notification.priority === "high").length;

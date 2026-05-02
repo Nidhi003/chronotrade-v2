@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { loadJournalWithFallback, saveJournalToCloud, deleteJournalFromCloud } from "@/lib/storage";
+import { useToast } from "@/components/ui/Toast";
 
 const emotionLabels = [
   { value: 1, label: "Frustrated", tone: "text-rose-300", chip: "bg-rose-500/12 border-rose-500/20" },
@@ -33,6 +34,7 @@ const quickPrompts = [
 
 export default function JournalPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function JournalPage() {
 
   const handleSaveEntry = async () => {
     if (!newEntry.title || !newEntry.emotion || !newEntry.content.trim()) {
-      alert("Please fill in title, emotion, and notes");
+      showToast("Please fill in title, emotion, and notes", "error");
       return;
     }
 

@@ -4,9 +4,11 @@ import { motion } from "framer-motion";
 import { Plus, Search, Trash2, X, Loader2 } from "lucide-react";
 import { addJournalEntry, deleteJournalEntry } from '@/lib/supabase';
 import { loadJournalWithFallback, saveJournalToCloud, deleteJournalFromCloud } from '@/lib/storage';
+import { useToast } from "@/components/ui/Toast";
 
 export default function JournalPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function JournalPage() {
 
   const handleSaveEntry = async () => {
     if (!newEntry.title || !newEntry.emotion) {
-      alert("Please fill in title and emotion");
+      showToast("Please fill in title and emotion", "error");
       return;
     }
     const entry = {
