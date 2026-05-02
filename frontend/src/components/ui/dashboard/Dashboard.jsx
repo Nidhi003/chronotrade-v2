@@ -337,14 +337,6 @@ export default function TradingDashboard() {
       />
 
       <main className="flex-1 min-w-0 h-dvh overflow-y-auto overflow-x-hidden">
-        {/* Floating Log Trade Button */}
-        <button
-          onClick={() => setShowTradeForm(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-yellow-300 px-6 py-4 text-black font-bold shadow-lg hover:bg-yellow-200 transition hover:scale-105"
-        >
-          <span className="text-xl">+</span> Log Trade
-        </button>
-        
         <Header 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
             theme={theme} 
@@ -371,6 +363,16 @@ export default function TradingDashboard() {
               animate="visible"
               className="space-y-8"
             >
+              {/* Log Trade Button */}
+              <motion.div variants={itemVariants} className="flex justify-end">
+                <button
+                  onClick={() => setShowTradeForm(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-yellow-300 px-6 py-3 text-sm font-bold text-black shadow-lg hover:bg-yellow-200 transition hover:scale-105"
+                >
+                  <Plus className="h-4 w-4" /> Log Trade
+                </button>
+              </motion.div>
+
               {/* Upgrade Banner for free users */}
               {tier === 'free' && (
                 <motion.div variants={itemVariants} className="upgrade-banner rounded-[1.8rem] border border-yellow-200/15 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
