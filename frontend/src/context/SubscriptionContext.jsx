@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 const SubscriptionContext = createContext({
   tier: "free",
@@ -54,25 +55,45 @@ export function SubscriptionProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load subscription from localStorage
-    let savedTier = localStorage.getItem("chronotrade_tier");
-    if (!savedTier) {
-      savedTier = "free";
-      localStorage.setItem("chronotrade_tier", "free");
-    }
-    const savedSub = localStorage.getItem("chronotrade_subscription");
-    
-    setTier(savedTier);
-    if (savedSub) {
-      setSubscription(JSON.parse(savedSub));
-    }
-    setLoading(false);
+    const fetchTier = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: { user } } = await supabase.auth.getUser(session.access_token);
+          const serverTier = user?.user_metadata?.subscription_tier || "free";
+          setTier(serverTier);
+          localStorage.setItem("chronotrade_tier", serverTier);
+        } else {
+          setTier("free");
+          localStorage.removeItem("chronotrade_tier");
+        }
+      } catch {
+        setTier("free");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTier();
+
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        fetchTier();
+      } else if (event === "SIGNED_OUT") {
+        setTier("free");
+        setSubscription(null);
+        localStorage.removeItem("chronotrade_tier");
+        localStorage.removeItem("chronotrade_subscription");
+        setLoading(false);
+      }
+    });
+
+    return () => authSub.unsubscribe();
   }, []);
 
   const subscribe = async (tierId) => {
     const tierInfo = TIERS[tierId];
     if (!tierInfo || tierInfo.price === 0) {
-      // Free tier
       setTier(tierId);
       setSubscription(null);
       localStorage.setItem("chronotrade_tier", tierId);
@@ -80,10 +101,7 @@ export function SubscriptionProvider({ children }) {
       return { success: true, tier: tierId };
     }
 
-    // For paid tiers, integrate with payment provider
     try {
-      // In production, this would call your backend to create a checkout session
-      // For now, simulate a successful payment
       const mockSubscription = {
         tier: tierId,
         plan: tierInfo.name,
