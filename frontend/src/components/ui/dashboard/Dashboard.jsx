@@ -377,7 +377,41 @@ export default function TradingDashboard() {
                 </button>
               </motion.div>
 
-              <CommandCenterPanel />
+              {/* Upgrade Banner for free users */}
+              {tier === 'free' && (
+                <motion.div variants={itemVariants} className="upgrade-banner rounded-[1.8rem] border border-yellow-200/15 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-200 via-yellow-300 to-amber-400 shadow-[0_12px_30px_rgba(250,204,21,0.2)]">
+                      <Crown className="h-6 w-6 text-black" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">Upgrade to Pro or Elite</div>
+                      <div className="text-xs text-zinc-400 mt-0.5">Unlock analytics, calendar, reports, psychology scoring, and more</div>
+                    </div>
+                  </div>
+                  <button onClick={() => navigate('/subscribe')} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 px-6 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-black shadow-[0_12px_30px_rgba(250,204,21,0.16)] transition-all hover:shadow-[0_16px_40px_rgba(250,204,21,0.22)] active:scale-95 whitespace-nowrap">
+                    <Gem className="h-4 w-4" /> Upgrade
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Upgrade Banner for Pro users */}
+              {tier === 'pro' && (
+                <motion.div variants={itemVariants} className="upgrade-banner rounded-[1.8rem] border border-purple-500/20 bg-gradient-to-r from-purple-500/[0.08] to-black p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 via-purple-500 to-indigo-600 shadow-[0_12px_30px_rgba(147,51,234,0.25)]">
+                      <Gem className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">Upgrade to Elite</div>
+                      <div className="text-xs text-zinc-400 mt-0.5">Unlock psychology tracking, multi-account management, and AI insights</div>
+                    </div>
+                  </div>
+                  <button onClick={() => navigate('/subscribe')} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-400 to-indigo-500 px-6 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-[0_12px_30px_rgba(147,51,234,0.2)] transition-all hover:shadow-[0_16px_40px_rgba(147,51,234,0.3)] active:scale-95 whitespace-nowrap">
+                    <ArrowRight className="h-4 w-4" /> Upgrade to Elite
+                  </button>
+                </motion.div>
+              )}
 
               <StatsCards trades={trades} theme={theme} />
 
@@ -495,14 +529,14 @@ export default function TradingDashboard() {
 
               {/* Upgrade Banner for free users */}
               {tier === 'free' && (
-                <motion.div variants={itemVariants} className="upgrade-banner rounded-[1.8rem] border border-yellow-200/15 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <motion.div variants={itemVariants} className="rounded-[1.8rem] border border-yellow-200/15 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-200 via-yellow-300 to-amber-400 shadow-[0_12px_30px_rgba(250,204,21,0.2)]">
                       <Crown className="h-6 w-6 text-black" />
                     </div>
                     <div>
                       <div className="text-sm font-bold text-white">Upgrade to Pro or Elite</div>
-                      <div className="text-xs text-zinc-400 mt-0.5">Unlock analytics, calendar, reports, psychology scoring, and more</div>
+                      <div className="text-xs text-zinc-400 mt-0.5">Unlock analytics, calendar, reports, and more</div>
                     </div>
                   </div>
                   <button onClick={() => navigate('/subscribe')} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 px-6 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-black shadow-[0_12px_30px_rgba(250,204,21,0.16)] transition-all hover:shadow-[0_16px_40px_rgba(250,204,21,0.22)] active:scale-95 whitespace-nowrap">
@@ -513,14 +547,14 @@ export default function TradingDashboard() {
 
               {/* Upgrade Banner for Pro users */}
               {tier === 'pro' && (
-                <motion.div variants={itemVariants} className="upgrade-banner rounded-[1.8rem] border border-purple-500/20 bg-gradient-to-r from-purple-500/[0.08] to-black p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <motion.div variants={itemVariants} className="rounded-[1.8rem] border border-purple-500/20 bg-gradient-to-r from-purple-500/[0.08] to-black p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 via-purple-500 to-indigo-600 shadow-[0_12px_30px_rgba(147,51,234,0.25)]">
                       <Gem className="h-6 w-6 text-white" />
                     </div>
                     <div>
                       <div className="text-sm font-bold text-white">Upgrade to Elite</div>
-                      <div className="text-xs text-zinc-400 mt-0.5">Unlock psychology tracking, multi-account management, and AI insights</div>
+                      <div className="text-xs text-zinc-400 mt-0.5">Unlock psychology tracking, multi-account management, and more</div>
                     </div>
                   </div>
                   <button onClick={() => navigate('/subscribe')} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-400 to-indigo-500 px-6 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-[0_12px_30px_rgba(147,51,234,0.2)] transition-all hover:shadow-[0_16px_40px_rgba(147,51,234,0.3)] active:scale-95 whitespace-nowrap">
@@ -529,7 +563,7 @@ export default function TradingDashboard() {
                 </motion.div>
               )}
 
-              <motion.div 
+              <div className="mt-8"> 
                 variants={itemVariants}
                 className={getGlassClass2(theme)}
               >
@@ -686,7 +720,12 @@ export default function TradingDashboard() {
           )}
 
           {tier === 'free' && (
-            <motion.div variants={itemVariants} className="rounded-[1.8rem] border border-yellow-200/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6">
+            <motion.div 
+              variants={itemVariants} 
+              className={`rounded-[1.8rem] border border-yellow-200/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6 ${
+                trades.length > 5 ? 'mt-16' : trades.length > 0 ? 'mt-10' : 'mt-6'
+              }`}
+            >
               <h3 className="text-lg font-bold text-white mb-2">Unlock powerful trading tools</h3>
               <p className="text-sm text-zinc-400 mb-6">See what you're missing — upgrade anytime to accelerate your trading growth.</p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -809,41 +848,6 @@ export default function TradingDashboard() {
     </div>
   );
 }
-
-const CommandCenterPanel = () => {
-  return (
-    <motion.div
-      variants={itemVariants}
-      className="overflow-hidden rounded-2xl border border-yellow-200/10 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.16),transparent_30%),linear-gradient(135deg,rgba(250,204,21,0.10),rgba(255,255,255,0.035)_38%,rgba(0,0,0,0.38))] p-6 md:p-8"
-    >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-200/70">ChronoTradez</div>
-          <h2 className="mt-2 text-2xl font-bold text-white">
-            Track trades. View calendar. Improve.
-          </h2>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          {[
-            { label: "Journal", icon: BookOpen },
-            { label: "Calendar", icon: Calendar },
-            { label: "Analytics", icon: BarChart3 },
-            { label: "Streaks", icon: Flame },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.label} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                <Icon className="h-4 w-4 text-yellow-200" />
-                <span className="text-sm text-zinc-300">{item.label}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 // -------------------------------------------------------------------------
 // SIDEBAR COMPONENT
