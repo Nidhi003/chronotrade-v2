@@ -195,12 +195,6 @@ export default function TradingDashboard() {
     return () => window.removeEventListener('importTrades', handleImportTrades);
   }, []);
 
-  // Calculate current account balance from trades
-  const accountBalance = React.useMemo(() => {
-    const totalPnl = trades.reduce((sum, trade) => sum + (parseFloat(trade.pnl) || 0), 0);
-    return effectiveBalance + totalPnl;
-  }, [trades, effectiveBalance]);
-
   // Calculate equity curve from trades
   const equityData = React.useMemo(() => {
     if (!trades || !trades.length) return [{ date: "Now", value: effectiveBalance }];
@@ -361,7 +355,6 @@ export default function TradingDashboard() {
         <Header 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
             theme={theme} 
-            accountBalance={accountBalance}
             startingBalance={effectiveBalance}
             setStartingBalance={setStartingBalance}
             brokerConnected={brokerConnected}
@@ -846,7 +839,7 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
 // -------------------------------------------------------------------------
 // HEADER COMPONENT
 // -------------------------------------------------------------------------
-const Header = ({ onMenuClick, theme, accountBalance, startingBalance = 10000, setStartingBalance = () => {}, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
+const Header = ({ onMenuClick, theme, startingBalance = 10000, setStartingBalance = () => {}, brokerConnected, showNotifications, setShowNotifications, showProfileDropdown, setShowProfileDropdown, setShowSettings, setShowHelp, user, userName, setUserName, tier, navigate, onLogout }) => {
   const safeBalance = typeof startingBalance === 'number' && startingBalance > 0 ? startingBalance : 10000;
   const [showBalanceEdit, setShowBalanceEdit] = React.useState(false);
   const [editBalance, setEditBalance] = React.useState(safeBalance);
@@ -902,10 +895,6 @@ const Header = ({ onMenuClick, theme, accountBalance, startingBalance = 10000, s
                 <Pencil className="h-2.5 w-2.5" />
               </button>
             )}
-            <span className="text-[10px] text-zinc-600">|</span>
-            <span className="text-[10px] text-emerald-400 font-mono">
-              Current: ${accountBalance.toLocaleString()}
-            </span>
           </div>
         </div>
         
@@ -1057,15 +1046,6 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
       icon: DollarSign,
       iconWrap: "bg-blue-400/10 border border-blue-300/20",
       iconClass: "text-blue-200",
-    },
-    {
-      title: "Current Balance",
-      value: `$${accountBalance.toLocaleString()}`,
-      change: "",
-      isPositive: true,
-      icon: DollarSign,
-      iconWrap: "bg-emerald-400/10 border border-emerald-300/20",
-      iconClass: "text-emerald-200",
     },
     {
       title: "Portfolio P&L",
