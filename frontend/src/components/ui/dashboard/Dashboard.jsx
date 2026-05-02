@@ -232,7 +232,9 @@ export default function TradingDashboard() {
     });
     const todayPnl = todayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
     const todayWinRate = todayTrades.length ? Math.round((todayTrades.filter(t => (t.pnl || 0) > 0).length / todayTrades.length * 100)) : 0;
-    const bestTrade = todayTrades.length ? Math.max(...todayTrades.map(t => t.pnl || 0)) : 0;
+    
+    const winningTrades = todayTrades.filter(t => (t.pnl || 0) > 0);
+    const bestTrade = winningTrades.length ? Math.max(...winningTrades.map(t => t.pnl || 0)) : 0;
     
     const dailyPnl = {};
     trades.forEach(t => {
@@ -240,8 +242,8 @@ export default function TradingDashboard() {
       if (!dailyPnl[date]) dailyPnl[date] = 0;
       dailyPnl[date] += t.pnl || 0;
     });
-    const days = Object.entries(dailyPnl).sort((a, b) => b[1] - a[1]);
-    const bestDay = days[0] ? { date: days[0][0], pnl: days[0][1] } : { date: 'N/A', pnl: 0 };
+    const winningDays = Object.entries(dailyPnl).filter(([, pnl]) => pnl > 0).sort((a, b) => b[1] - a[1]);
+    const bestDay = winningDays[0] ? { date: winningDays[0][0], pnl: winningDays[0][1] } : { date: 'N/A', pnl: 0 };
     
     return {
       todayTrades: todayTrades.length,
@@ -502,7 +504,11 @@ export default function TradingDashboard() {
                     </div>
                     <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                       <div className="text-xs text-zinc-500 mb-1">Best Trade</div>
-                      <div className="text-2xl font-black text-emerald-400">+${bestTrade}</div>
+                      {bestTrade > 0 ? (
+                        <div className="text-2xl font-black text-emerald-400">+${bestTrade}</div>
+                      ) : (
+                        <div className="text-sm text-zinc-500">No wins yet</div>
+                      )}
                     </div>
                   </div>
                   
@@ -511,9 +517,13 @@ export default function TradingDashboard() {
                       <ArrowUpRight className="h-4 w-4 text-emerald-400" />
                       <span className="text-xs text-emerald-400 font-medium">Best Day</span>
                     </div>
-                    <div className="text-lg font-bold text-white">
-                      {bestDay.date}: {bestDay.pnl >= 0 ? "+" : ""}${bestDay.pnl}
-                    </div>
+                    {bestDay.date !== 'N/A' ? (
+                      <div className="text-lg font-bold text-white">
+                        {bestDay.date}: +${bestDay.pnl}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-zinc-500">No winning days yet</div>
+                    )}
                   </div>
                 </motion.div>
               </div>
