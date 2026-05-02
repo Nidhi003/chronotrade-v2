@@ -503,6 +503,34 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   res.json({ received: true });
 });
 
+// Support endpoint - routes to nidhitrades17@gmail.com
+app.post('/api/support', async (req, res) => {
+  try {
+    const { category, subject, message, email, tier, priority } = req.body;
+    
+    if (!category || !subject || !message || !email) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const supportEmail = 'nidhitrades17@gmail.com';
+    
+    console.log('Support Ticket:', {
+      to: supportEmail,
+      from: email,
+      category,
+      subject,
+      message,
+      tier,
+      priority,
+      timestamp: new Date().toISOString(),
+    });
+
+    res.json({ success: true, message: 'Support ticket submitted' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Forex News API - Scrapes from multiple sources
 app.get('/api/news', async (req, res) => {
   try {

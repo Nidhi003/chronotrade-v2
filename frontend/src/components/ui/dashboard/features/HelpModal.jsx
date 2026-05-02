@@ -103,7 +103,7 @@ export default function HelpModal({ isOpen, onClose, theme = "dark" }) {
       message,
     ].join("\n");
 
-    const mailtoLink = `mailto:support@chronotrade.io?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoLink = `mailto:nidhitrades17@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink, "_blank");
 
     setSent(true);

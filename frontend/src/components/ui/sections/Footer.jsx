@@ -364,7 +364,7 @@ export function CinematicFooter() {
                 </MagneticButton>
                 <MagneticButton
                   as="a"
-                  href="mailto:support@chronotrade.com"
+                  href="mailto:nidhitrades17@gmail.com"
                   className="footer-glass-pill px-6 py-3 rounded-full text-gray-400 font-medium text-xs md:text-sm hover:text-white"
                 >
                   Support

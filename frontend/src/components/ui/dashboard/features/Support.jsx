@@ -34,10 +34,27 @@ export default function Support() {
     setSending(true);
     setError(null);
 
-    await new Promise(r => setTimeout(r, 1500));
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      await fetch(`${API_URL}/api/support`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category,
+          subject,
+          message,
+          email,
+          tier,
+          priority,
+        }),
+      });
+
+      setSent(true);
+    } catch (err) {
+      setError("Failed to send message. Please try again.");
+    }
 
     setSending(false);
-    setSent(true);
   };
 
   const priority = tier === "elite" ? "high" : tier === "pro" ? "medium" : "low";

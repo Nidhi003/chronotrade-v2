@@ -951,7 +951,7 @@ const Header = ({ onMenuClick, theme, brokerConnected, showNotifications, setSho
                     tier === 'pro' ? 'bg-yellow-300/20 text-yellow-200' :
                     'bg-slate-500/20 text-slate-400'
                   }`}>
-                    Test Build
+                    {tier === 'elite' ? 'Elite' : tier === 'pro' ? 'Pro' : 'Free'}
                   </span>
                 </div>
               </div>
