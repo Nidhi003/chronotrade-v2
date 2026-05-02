@@ -23,9 +23,9 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    monthlyPrice: 14,
-    yearlyPrice: 134,
-    savings: 34,
+    monthlyPrice: 1500,
+    yearlyPrice: 15000,
+    savings: 3000,
     icon: Crown,
     description: "For serious traders wanting deeper analytics.",
     features: [
@@ -40,9 +40,9 @@ const PLANS = [
   {
     id: "elite",
     name: "Elite",
-    monthlyPrice: 29,
-    yearlyPrice: 279,
-    savings: 69,
+    monthlyPrice: 3000,
+    yearlyPrice: 30000,
+    savings: 6000,
     icon: Rocket,
     description: "For prop firm traders and teams.",
     features: [
@@ -109,14 +109,14 @@ export default function Subscribe() {
     
     try {
       const amountInDollars = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
-      const amountInCents = Math.round(amountInDollars * 100);
+      const amountInPaise = Math.round(amountInDollars * 100);
 
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       
       const orderResponse = await fetch(`${API_URL}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amountInCents, currency: 'USD' }),
+        body: JSON.stringify({ amount: amountInPaise, currency: 'INR' }),
       });
 
       if (!orderResponse.ok) {
@@ -128,8 +128,8 @@ export default function Subscribe() {
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SkbD1c5YkSnmcG",
-        amount: amountInCents,
-        currency: "USD",
+        amount: amountInPaise,
+        currency: "INR",
         name: "ChronoTradez",
         description: `${plan.name} Plan - ${billing}`,
         image: "/favicon.svg",
@@ -233,7 +233,7 @@ export default function Subscribe() {
             >
               Yearly
               {billing === "yearly" && (
-                <span className="ml-2 text-xs font-normal text-green-600">Save ~30%</span>
+                <span className="ml-2 text-xs font-normal text-green-600">Save ₹3000+</span>
               )}
             </button>
           </div>
@@ -262,8 +262,8 @@ export default function Subscribe() {
                 <div>
                   <div className="text-xs uppercase tracking-[0.34em] text-zinc-500">{plan.name}</div>
                   <div className="mt-4 text-5xl font-black tracking-[-0.05em] text-white">
-                    ${billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice}
-                    <span className="ml-2 text-base font-medium text-zinc-500">/{billing}</span>
+                    ₹{billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice}
+                    <span className="ml-2 text-base font-medium text-zinc-500">/{billing === "yearly" ? "year" : "month"}</span>
                   </div>
                 </div>
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-yellow-200/12 bg-yellow-200/[0.06]">

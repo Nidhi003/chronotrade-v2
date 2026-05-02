@@ -26,7 +26,7 @@ const TIERS = {
   pro: {
     id: "pro",
     name: "Pro",
-    price: 14,
+    price: 1500,
     priceId: "pro_monthly",
     features: [
       "Unlimited trades",
@@ -38,7 +38,7 @@ const TIERS = {
   elite: {
     id: "elite",
     name: "Elite",
-    price: 29,
+    price: 3000,
     priceId: "elite_monthly",
     features: [
       "Everything in Pro",
