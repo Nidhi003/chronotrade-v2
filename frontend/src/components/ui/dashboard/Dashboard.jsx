@@ -105,7 +105,7 @@ export default function TradingDashboard() {
     const parsed = parseFloat(saved);
     return (!isNaN(parsed) && parsed > 0) ? parsed : DEFAULT_BALANCE;
   });
-  const effectiveBalance = React.useMemo(() => startingBalance || DEFAULT_BALANCE, [startingBalance]);
+  const effectiveBalance = DEFAULT_BALANCE;
   const [trades, setTrades] = React.useState([]);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [selectedMenu, setSelectedMenu] = React.useState("Dashboard");
