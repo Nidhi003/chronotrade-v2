@@ -79,7 +79,9 @@ export default function Subscribe() {
       const amountInDollars = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
       const amountInCents = Math.round(amountInDollars * 100);
 
-      const orderResponse = await fetch('http://localhost:3001/api/create-order', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      const orderResponse = await fetch(`${API_URL}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: amountInCents, currency: 'USD' }),
@@ -102,7 +104,7 @@ export default function Subscribe() {
         order_id,
         handler: async function (response) {
           try {
-            const verifyResponse = await fetch('http://localhost:3001/api/verify-payment', {
+            const verifyResponse = await fetch(`${API_URL}/api/verify-payment`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
