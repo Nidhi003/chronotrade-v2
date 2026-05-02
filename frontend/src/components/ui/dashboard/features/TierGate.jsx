@@ -6,8 +6,8 @@ import { Lock, Sparkles, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const TIER_LABELS = {
-  pro: { name: "Pro", price: "$14/mo", color: "from-yellow-200 via-yellow-300 to-amber-400" },
-  elite: { name: "Elite", price: "$29/mo", color: "from-amber-300 via-orange-400 to-rose-400" },
+  pro: { name: "Pro", price: "₹1500/mo", color: "from-yellow-200 via-yellow-300 to-amber-400" },
+  elite: { name: "Elite", price: "₹3000/mo", color: "from-amber-300 via-orange-400 to-rose-400" },
 };
 
 export default function TierGate({ children, feature, tierRequired = "pro" }) {

@@ -15,9 +15,9 @@ const PLANS = [
     icon: Zap,
     description: "Perfect for beginners starting their journaling journey.",
     features: [
-      "Up to 20 trades/month",
+      "Up to 10 trades",
       "Manual trade entry",
-      "Local storage",
+      "Basic dashboard",
     ],
     popular: false,
   },
@@ -59,7 +59,7 @@ const PLANS = [
 
 export default function Subscribe() {
   const { user, session } = useAuth();
-  const { subscribe, tier } = useSubscription();
+  const { subscribe, tier, refreshTier } = useSubscription();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -97,10 +97,10 @@ export default function Subscribe() {
             },
             body: JSON.stringify({ tier: planId, billing }),
           });
-          await subscribe(planId);
         } catch (err) {
           console.error("Failed to update tier:", err);
         }
+        await subscribe(planId);
         window.open(link, "_blank");
         navigate("/dashboard");
         return;
@@ -155,6 +155,7 @@ export default function Subscribe() {
             }
 
             await subscribe(planId);
+            await refreshTier();
             showToast("Payment successful! Welcome to " + plan.name, "success");
             navigate("/dashboard");
           } catch (err) {
@@ -287,7 +288,7 @@ export default function Subscribe() {
 
               <button
                 onClick={() => handleSubscribe(plan.id)}
-                disabled={loading || tier === plan.id}
+                disabled={loading}
                 className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.24em] transition ${
                   plan.popular
                     ? "bg-yellow-200 text-black hover:bg-yellow-100"
@@ -299,10 +300,15 @@ export default function Subscribe() {
                     <Zap className="h-4 w-4" />
                     {tier === "free" ? "Current Plan" : "Get Started Free"}
                   </>
+                ) : tier === plan.id ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Current Plan
+                  </>
                 ) : (
                   <>
                     <CreditCard className="h-4 w-4" />
-                    {tier === plan.id ? "Current Plan" : `Subscribe ${billing}`}
+                    Subscribe {billing}
                   </>
                 )}
               </button>

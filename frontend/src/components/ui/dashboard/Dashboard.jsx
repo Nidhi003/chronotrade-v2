@@ -813,27 +813,39 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = selected === item.label;
-          const isLocked = item.tier && tier === 'free';
+          const isLocked = item.tier && (
+            (item.tier === 'pro' && tier === 'free') ||
+            (item.tier === 'elite' && tier !== 'elite')
+          );
            
-          return (
+           return (
             <button
               key={item.label}
-              onClick={() => setSelected(item.label)}
+              onClick={() => {
+                if (isLocked) {
+                  navigate('/subscribe');
+                } else {
+                  setSelected(item.label);
+                }
+              }}
               className={`group relative flex items-center h-10 w-full rounded-lg transition-all duration-200 ${
                 open ? 'justify-start pl-3' : 'justify-center'
               } ${
                 isActive
                   ? "bg-yellow-200 text-black"
                   : isLocked
-                    ? "text-zinc-400 hover:text-zinc-300"
+                    ? "text-zinc-400 hover:text-zinc-300 cursor-pointer"
                     : "text-white hover:bg-white/5 hover:text-white"
               }`}
-              title={item.label}
+              title={isLocked ? `Upgrade to ${item.tier} to unlock` : item.label}
             >
               <Icon className={`h-5 w-5 shrink-0 ${isLocked ? 'opacity-40' : ''}`} />
               {open && (
                 <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">
                   {item.label}
+                  {isLocked && (
+                    <span className="ml-2 text-[10px] uppercase tracking-wider text-zinc-600">locked</span>
+                  )}
                 </span>
               )}
               {isLocked && !open && (

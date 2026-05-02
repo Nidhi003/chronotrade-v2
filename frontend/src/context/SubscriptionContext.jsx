@@ -19,7 +19,7 @@ const TIERS = {
     features: [
       "Basic trade journaling",
       "Manual trade entry",
-      "Local storage",
+      "Basic dashboard",
     ],
     limits: { trades: 10, strategies: 1 }
   },
@@ -124,6 +124,20 @@ export function SubscriptionProvider({ children }) {
     }
   };
 
+  const refreshTier = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: { user } } = await supabase.auth.getUser(session.access_token);
+        const serverTier = user?.user_metadata?.subscription_tier || "free";
+        setTier(serverTier);
+        localStorage.setItem("chronotrade_tier", serverTier);
+      }
+    } catch (err) {
+      console.error("Failed to refresh tier:", err);
+    }
+  };
+
   const cancelSubscription = async () => {
     setTier("free");
     setSubscription(null);
@@ -134,45 +148,11 @@ export function SubscriptionProvider({ children }) {
 
   const getTierInfo = () => TIERS[tier] || TIERS.free;
 
-  // Feature to tier mapping - Only realtime working features
-  const FEATURE_TIERS = {
-    // Free features (everyone can access)
-    free: ['journal', 'dashboard'],
-    
-    // Pro features ($14/mo)
-    pro: [
-      'calendar', 'analytics', 'pdfReports'
-    ],
-    
-    // Elite features ($29/mo)
-    elite: [
-      'multiAccount', 'psychology'
-    ]
-  };
-
   const canAccess = (feature) => {
-    const featureLower = feature.toLowerCase();
-    
-    // Free tier features
-    if (FEATURE_TIERS.free.some(f => featureLower.includes(f))) {
-      return true;
-    }
-    
-    // Elite features require elite tier
-    if (FEATURE_TIERS.elite.some(f => featureLower.includes(f))) {
-      return tier === "elite";
-    }
-    
-    // Pro features require pro or elite
-    if (FEATURE_TIERS.pro.some(f => featureLower.includes(f))) {
-      return tier === "pro" || tier === "elite";
-    }
-    
-    // Default: check tier level
-    if (tier === "elite") return true;
-    if (tier === "pro") {
-      return !FEATURE_TIERS.elite.some(f => featureLower.includes(f));
-    }
+    const eliteFeatures = ['psychology', 'multiaccount'];
+
+    if (tier === 'elite') return true;
+    if (tier === 'pro') return !eliteFeatures.includes(feature);
     return false;
   };
 
@@ -183,6 +163,7 @@ export function SubscriptionProvider({ children }) {
       loading,
       subscribe,
       cancelSubscription,
+      refreshTier,
       getTierInfo,
       canAccess,
       TIERS

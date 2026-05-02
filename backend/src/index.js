@@ -54,6 +54,11 @@ const supabase = createClient(
   process.env.SUPABASE_KEY || 'your-anon-key'
 );
 
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL || 'https://your-project.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 'your-service-role-key'
+);
+
 // Input validation helpers
 function sanitizeString(str, maxLength = 1000) {
   if (typeof str !== 'string') return '';
@@ -381,8 +386,8 @@ app.post('/api/update-tier', async (req, res) => {
       return res.status(400).json({ error: 'Invalid tier' });
     }
     
-    // Update user metadata
-    const { error } = await supabase.auth.admin.updateUserById(user.id, {
+    // Update user metadata using service role key
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       user_metadata: { 
         subscription_tier: tier, 
         billing_cycle: billing || 'monthly',
