@@ -196,13 +196,14 @@ export default function TradingDashboard() {
 
   // Calculate equity curve from trades
   const equityData = React.useMemo(() => {
-    if (!trades || !trades.length) return [{ date: "Now", value: startingBalance }];
+    const balance = startingBalance || 10000;
+    if (!trades || !trades.length) return [{ date: "Now", value: balance }];
     
     const sortedTrades = [...trades].sort((a, b) => 
       new Date(a.created_at) - new Date(b.created_at)
     );
     
-    let cumulative = startingBalance;
+    let cumulative = balance;
     return sortedTrades.slice(0, 15).map(t => {
       cumulative += t.pnl || 0;
       return { 
@@ -1039,7 +1040,7 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
   const stats = [
     {
       title: "Starting Balance",
-      value: `$${startingBalance.toLocaleString()}`,
+      value: `$${(startingBalance || 10000).toLocaleString()}`,
       change: "",
       isPositive: true,
       icon: DollarSign,
