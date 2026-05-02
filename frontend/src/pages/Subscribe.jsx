@@ -73,6 +73,13 @@ export default function Subscribe() {
     const plan = PLANS.find(p => p.id === planId);
     if (!plan) return;
 
+    if (planId === "pro") {
+      await subscribe(planId);
+      window.open("https://rzp.io/rzp/q5ZORjE", "_blank");
+      navigate("/dashboard");
+      return;
+    }
+
     setLoading(true);
     
     try {
