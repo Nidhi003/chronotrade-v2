@@ -196,13 +196,13 @@ export default function TradingDashboard() {
 
   // Calculate equity curve from trades
   const equityData = React.useMemo(() => {
-    if (!trades || !trades.length) return [{ date: "Now", value: DEFAULT_BALANCE }];
+    if (!trades || !trades.length) return [{ date: "Now", value: startingBalance }];
     
     const sortedTrades = [...trades].sort((a, b) => 
       new Date(a.created_at) - new Date(b.created_at)
     );
     
-    let cumulative = DEFAULT_BALANCE;
+    let cumulative = startingBalance;
     return sortedTrades.slice(0, 15).map(t => {
       cumulative += t.pnl || 0;
       return { 
@@ -210,7 +210,7 @@ export default function TradingDashboard() {
         value: cumulative 
       };
     });
-  }, [trades, DEFAULT_BALANCE]);
+  }, [trades, startingBalance]);
 
   // Calculate strategy data from actual trades
   const strategyData = React.useMemo(() => {
@@ -354,7 +354,7 @@ export default function TradingDashboard() {
         <Header 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
             theme={theme} 
-            startingBalance={DEFAULT_BALANCE}
+            startingBalance={startingBalance}
             setStartingBalance={setStartingBalance}
             brokerConnected={brokerConnected}
             showNotifications={showNotifications}
@@ -1039,7 +1039,7 @@ const StatsCards = ({ trades = [], theme = 'dark' }) => {
   const stats = [
     {
       title: "Starting Balance",
-      value: `$${DEFAULT_BALANCE.toLocaleString()}`,
+      value: `$${startingBalance.toLocaleString()}`,
       change: "",
       isPositive: true,
       icon: DollarSign,
