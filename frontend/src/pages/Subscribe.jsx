@@ -76,19 +76,54 @@ export default function Subscribe() {
     setLoading(true);
     
     try {
-      // Create Razorpay order via your backend (recommended)
-      // For now, using direct Razorpay checkout
+      const amountInDollars = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+      const amountInCents = Math.round(amountInDollars * 100);
+
+      const orderResponse = await fetch('http://localhost:3001/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amountInCents, currency: 'USD' }),
+      });
+
+      if (!orderResponse.ok) {
+        const error = await orderResponse.json();
+        throw new Error(error.error || 'Failed to create order');
+      }
+
+      const { order_id } = await orderResponse.json();
+
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_YOUR_KEY", // Set in env
-        amount: (billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice) * 100, // in paise
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SkanseMumxtVBq",
+        amount: amountInCents,
         currency: "USD",
         name: "ChronoTradez",
         description: `${plan.name} Plan - ${billing}`,
         image: "/favicon.svg",
+        order_id,
         handler: async function (response) {
-          // Payment successful
-          await subscribe(planId);
-          navigate("/dashboard");
+          try {
+            const verifyResponse = await fetch('http://localhost:3001/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyResult = await verifyResponse.json();
+
+            if (!verifyResponse.ok || !verifyResult.success) {
+              throw new Error(verifyResult.error || 'Payment verification failed');
+            }
+
+            await subscribe(planId);
+            navigate("/dashboard");
+          } catch (err) {
+            console.error("Payment verification error:", err);
+            alert("Payment verification failed: " + err.message);
+          }
         },
         prefill: {
           email: user?.email || "",
@@ -103,9 +138,14 @@ export default function Subscribe() {
       };
 
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (response) => {
+        console.error("Payment failed:", response.error);
+        alert("Payment failed: " + response.error.description);
+      });
       rzp.open();
     } catch (e) {
       console.error("Payment error:", e);
+      alert("Payment error: " + e.message);
     } finally {
       setLoading(false);
     }

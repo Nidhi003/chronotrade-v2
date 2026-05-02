@@ -11,17 +11,19 @@ const razorpay = new Razorpay({
 
 router.post('/create-order', async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, currency = 'USD' } = req.body;
 
-    if (!amount || amount < 100) {
+    const minAmount = currency === 'USD' ? 50 : 100;
+
+    if (!amount || amount < minAmount) {
       return res.status(400).json({ 
-        error: 'Amount must be at least 100 paise (₹1)' 
+        error: `Amount must be at least ${minAmount} cents (USD) or 100 paise (INR)` 
       });
     }
 
     const options = {
       amount: amount,
-      currency: 'INR',
+      currency: currency.toUpperCase(),
       receipt: `receipt_${Date.now()}`,
     };
 
