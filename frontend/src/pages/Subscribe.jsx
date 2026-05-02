@@ -197,6 +197,32 @@ export default function Subscribe() {
           <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-zinc-400">
             Unlock advanced analytics, AI insights, and professional trading tools
           </p>
+
+          <div className="mt-8 flex items-center justify-center gap-4">
+            <button
+              onClick={() => setBilling("monthly")}
+              className={`rounded-full px-6 py-2 text-sm font-bold uppercase tracking-[0.15em] transition ${
+                billing === "monthly"
+                  ? "bg-yellow-200 text-black"
+                  : "text-zinc-500 hover:text-white"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBilling("yearly")}
+              className={`relative rounded-full px-6 py-2 text-sm font-bold uppercase tracking-[0.15em] transition ${
+                billing === "yearly"
+                  ? "bg-yellow-200 text-black"
+                  : "text-zinc-500 hover:text-white"
+              }`}
+            >
+              Yearly
+              {billing === "yearly" && (
+                <span className="ml-2 text-xs font-normal text-green-600">Save ~30%</span>
+              )}
+            </button>
+          </div>
         </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-3">
