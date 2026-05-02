@@ -112,23 +112,21 @@ export default function TradingDashboard() {
   const [selectedTrade, setSelectedTrade] = React.useState(null);
   const [userName, setUserName] = React.useState(() => localStorage.getItem('chronotrade_user_name') || '');
   const [brokerConnected, setBrokerConnected] = React.useState(() => localStorage.getItem('chronotrade_broker_connected') === 'true');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [tradePage, setTradePage] = useState(1);
+  const tradesPerPage = 15;
+  const [showConfirmModal, setShowConfirmModal] = useState(null);
 
-  // Initialize from localStorage after mount
+  // Lock body scroll when sidebar is open on mobile
   React.useEffect(() => {
-    const loadTrades = async () => {
-      try {
-        const loaded = await loadTradesWithFallback();
-        setTrades(Array.isArray(loaded) ? loaded : []);
-      } catch (e) {
-        console.error('Load error:', e);
-        setTrades([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTrades();
-  }, []);
-  
+    if (sidebarOpen && window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -155,7 +153,7 @@ export default function TradingDashboard() {
     return () => window.removeEventListener('name-updated', handleNameUpdate);
   }, [userName]);
 
-  // Load trades from local storage (instant load)
+  // Initialize from localStorage after mount
   useEffect(() => {
     const loadTrades = async () => {
       try {
@@ -168,7 +166,6 @@ export default function TradingDashboard() {
         setLoading(false);
       }
     };
-    
     loadTrades();
   }, []);
 
@@ -291,7 +288,8 @@ export default function TradingDashboard() {
   };
 
   const handleDeleteTrade = async (tradeId) => {
-    if (!confirm("Delete this trade?")) return;
+    if (!showConfirmModal || showConfirmModal.type !== 'delete-trade') return;
+    setShowConfirmModal(null);
     
     // Delete from local storage
     const trades = localStorageManager.getTrades();
@@ -305,6 +303,10 @@ export default function TradingDashboard() {
     } catch (e) {
       console.warn('Cloud delete failed, local delete saved');
     }
+  };
+
+  const requestDeleteTrade = (tradeId) => {
+    setShowConfirmModal({ type: 'delete-trade', id: tradeId, message: 'Delete this trade?', onConfirm: () => handleDeleteTrade(tradeId) });
   };
 
   const handleUpdateTrade = async (tradeId, updates) => {
@@ -501,17 +503,21 @@ export default function TradingDashboard() {
                     <p className="text-sm text-zinc-500">Review every execution, setup, and result in one place</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="relative hidden sm:block">
+                    <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                       <input
                         type="text"
-                        placeholder="Search symbol, setup, or note..."
-                        className="pl-10 pr-4 py-2 rounded-xl bg-black/35 border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-300/30 transition-all w-64"
+                        placeholder="Search symbol..."
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setTradePage(1); }}
+                        className="pl-10 pr-4 py-2 rounded-xl bg-black/35 border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-300/30 transition-all w-48 sm:w-64"
+                        aria-label="Search trades"
                       />
                     </div>
                     <button
                       onClick={() => setShowTradeForm(true)}
                       className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 text-black font-bold transition-all shadow-[0_18px_50px_rgba(250,204,21,0.18)] active:scale-95"
+                      aria-label="Log a new trade"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Log Trade</span>
@@ -519,80 +525,202 @@ export default function TradingDashboard() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-white/[0.03]">
-                        <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Asset</th>
-                        <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Direction</th>
-                        <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Strategy</th>
-                        <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">P&L</th>
-                        <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
-                        <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Timestamp</th>
-                        <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {trades.map((trade) => (
-                        <motion.tr
-                          key={trade.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          onClick={() => setSelectedTrade(trade)}
-                          className="hover:bg-white/[0.03] transition-colors group cursor-pointer"
-                        >
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-yellow-300/10 flex items-center justify-center">
-                                <span className="text-[10px] font-bold text-yellow-200">{trade.symbol.substring(0, 2)}</span>
+                {/* Filtered and paginated trades */}
+                {(() => {
+                  const filtered = searchQuery
+                    ? trades.filter(t => t.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) || t.strategy?.toLowerCase().includes(searchQuery.toLowerCase()) || t.notes?.toLowerCase().includes(searchQuery.toLowerCase()))
+                    : trades;
+                  const totalPages = Math.ceil(filtered.length / tradesPerPage);
+                  const paginatedTrades = filtered.slice((tradePage - 1) * tradesPerPage, tradePage * tradesPerPage);
+
+                  return (
+                    <>
+                      {/* Mobile card view */}
+                      <div className="block lg:hidden space-y-3 p-4">
+                        {paginatedTrades.length === 0 ? (
+                          <div className="text-center py-12 text-zinc-500">
+                            {searchQuery ? 'No trades match your search' : 'No trades yet. Log your first trade!'}
+                          </div>
+                        ) : (
+                          paginatedTrades.map((trade) => (
+                            <div
+                              key={trade.id}
+                              onClick={() => setSelectedTrade(trade)}
+                              className="rounded-xl border border-white/5 bg-white/[0.02] p-4 cursor-pointer active:bg-white/[0.04]"
+                              role="button"
+                              aria-label={`View details for ${trade.symbol} trade`}
+                            >
+                              <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-yellow-300/10 flex items-center justify-center">
+                                    <span className="text-[10px] font-bold text-yellow-200">{trade.symbol?.substring(0, 2)}</span>
+                                  </div>
+                                  <span className="font-semibold text-zinc-200">{trade.symbol}</span>
+                                </div>
+                                <span className={`text-sm font-bold ${trade.pnl > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                  {trade.pnl > 0 ? '+' : ''}${Math.abs(trade.pnl || 0).toLocaleString()}
+                                </span>
                               </div>
-                              <span className="font-semibold text-zinc-200 group-hover:text-white transition-colors">{trade.symbol}</span>
+                              <div className="flex justify-between items-center text-xs text-zinc-500">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${trade.side === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                                  {trade.side}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${trade.status === 'WIN' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                                    {trade.status}
+                                  </span>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); requestDeleteTrade(trade.id); }}
+                                    className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-all"
+                                    aria-label={`Delete trade ${trade.symbol}`}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                          </td>
-                          <td className="py-4 px-6">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${
-                                trade.side === "LONG"
-                                  ? "bg-emerald-500/10 text-emerald-400"
-                                  : "bg-rose-500/10 text-rose-400"
-                              }`}
+                          ))
+                        )}
+                      </div>
+
+                      {/* Desktop table view */}
+                      <div className="hidden lg:block overflow-x-auto">
+                        <table className="w-full text-left">
+                          <thead>
+                            <tr className="bg-white/[0.03]">
+                              <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Asset</th>
+                              <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Direction</th>
+                              <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Strategy</th>
+                              <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">P&L</th>
+                              <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
+                              <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Timestamp</th>
+                              <th className="py-4 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            {paginatedTrades.length === 0 ? (
+                              <tr><td colSpan="7" className="text-center py-12 text-zinc-500">{searchQuery ? 'No trades match your search' : 'No trades yet. Log your first trade!'}</td></tr>
+                            ) : (
+                              paginatedTrades.map((trade) => (
+                                <motion.tr
+                                  key={trade.id}
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  onClick={() => setSelectedTrade(trade)}
+                                  className="hover:bg-white/[0.03] transition-colors group cursor-pointer"
+                                  role="button"
+                                  aria-label={`View details for ${trade.symbol} trade, ${trade.pnl > 0 ? '+' : ''}$${Math.abs(trade.pnl || 0)} ${trade.status}`}
+                                >
+                                  <td className="py-4 px-6">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-lg bg-yellow-300/10 flex items-center justify-center">
+                                        <span className="text-[10px] font-bold text-yellow-200">{trade.symbol?.substring(0, 2)}</span>
+                                      </div>
+                                      <span className="font-semibold text-zinc-200 group-hover:text-white transition-colors">{trade.symbol}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-4 px-6">
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${
+                                        trade.side === "LONG"
+                                          ? "bg-emerald-500/10 text-emerald-400"
+                                          : "bg-rose-500/10 text-rose-400"
+                                      }`}
+                                    >
+                                      {trade.side === "LONG" ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                                      {trade.side}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 px-6 text-sm text-zinc-400 font-medium">{trade.strategy || '-'}</td>
+                                  <td className={`py-4 px-6 text-sm font-bold text-right ${trade.pnl > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                    {trade.pnl > 0 ? "+" : ""}${Math.abs(trade.pnl || 0).toLocaleString()}
+                                  </td>
+                                  <td className="py-4 px-6">
+                                    <span
+                                      className={`text-[10px] font-bold px-2 py-1 rounded-md ${
+                                        trade.status === "WIN"
+                                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
+                                          : "bg-rose-500/20 text-rose-400 border border-rose-500/20"
+                                      }`}
+                                    >
+                                      {trade.status}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 px-6 text-xs text-zinc-500 font-medium">
+                                    {trade.created_at ? new Date(trade.created_at).toLocaleString() : 'Just now'}
+                                  </td>
+                                  <td className="py-4 px-6 text-right">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); requestDeleteTrade(trade.id); }}
+                                      className="p-2 rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
+                                      aria-label={`Delete trade ${trade.symbol}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </td>
+                                </motion.tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-6 py-4 border-t border-white/5">
+                          <div className="text-sm text-zinc-500">
+                            Showing {(tradePage - 1) * tradesPerPage + 1}-{Math.min(tradePage * tradesPerPage, filtered.length)} of {filtered.length}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setTradePage(p => Math.max(1, p - 1))}
+                              disabled={tradePage === 1}
+                              className="px-3 py-1.5 rounded-lg text-sm font-medium border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.04] transition"
+                              aria-label="Previous page"
                             >
-                              {trade.side === "LONG" ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                              {trade.side}
-                            </span>
-                          </td>
-                          <td className="py-4 px-6 text-sm text-slate-400 font-medium">{trade.strategy}</td>
-                          <td className={`py-4 px-6 text-sm font-bold text-right ${trade.pnl > 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                            {trade.pnl > 0 ? "+" : ""}${Math.abs(trade.pnl).toLocaleString()}
-                          </td>
-                          <td className="py-4 px-6">
-                            <span
-                              className={`text-[10px] font-bold px-2 py-1 rounded-md ${
-                                trade.status === "WIN"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
-                                  : "bg-rose-500/20 text-rose-400 border border-rose-500/20"
-                              }`}
-                            >
-                              {trade.status}
-                            </span>
-                          </td>
-                          <td className="py-4 px-6 text-xs text-slate-500 font-medium">
-                            {trade.created_at ? new Date(trade.created_at).toLocaleString() : 'Just now'}
-                          </td>
-                          <td className="py-4 px-6 text-right">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleDeleteTrade(trade.id); }}
-                              className="p-2 rounded-lg hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
-                              title="Delete trade"
-                            >
-                              <Trash2 className="h-4 w-4" />
+                              Previous
                             </button>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                              let page;
+                              if (totalPages <= 5) {
+                                page = i + 1;
+                              } else if (tradePage <= 3) {
+                                page = i + 1;
+                              } else if (tradePage >= totalPages - 2) {
+                                page = totalPages - 4 + i;
+                              } else {
+                                page = tradePage - 2 + i;
+                              }
+                              return (
+                                <button
+                                  key={page}
+                                  onClick={() => setTradePage(page)}
+                                  className={`w-8 h-8 rounded-lg text-sm font-medium transition ${
+                                    tradePage === page
+                                      ? 'bg-yellow-300 text-black'
+                                      : 'border border-white/10 hover:bg-white/[0.04]'
+                                  }`}
+                                  aria-label={`Page ${page}`}
+                                  aria-current={tradePage === page ? 'page' : undefined}
+                                >
+                                  {page}
+                                </button>
+                              );
+                            })}
+                            <button
+                              onClick={() => setTradePage(p => Math.min(totalPages, p + 1))}
+                              disabled={tradePage === totalPages}
+                              className="px-3 py-1.5 rounded-lg text-sm font-medium border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.04] transition"
+                              aria-label="Next page"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </motion.div>
             </motion.div>
           )}
@@ -773,6 +901,46 @@ export default function TradingDashboard() {
         onClose={() => setShowHelp(false)} 
         theme={theme}
       />
+
+      {/* Custom Confirm Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-title"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 shadow-2xl"
+            >
+              <h3 id="confirm-title" className="text-lg font-bold text-white mb-2">Confirm Action</h3>
+              <p className="text-sm text-zinc-400 mb-6">{showConfirmModal.message}</p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowConfirmModal(null)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-zinc-300 hover:bg-white/[0.04] transition"
+                  autoFocus
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={showConfirmModal.onConfirm}
+                  className="px-4 py-2 rounded-xl text-sm font-bold bg-red-500 text-white hover:bg-red-400 transition"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

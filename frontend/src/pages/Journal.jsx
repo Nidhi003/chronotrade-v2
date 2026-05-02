@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useDeferredValue } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -39,12 +39,15 @@ export default function JournalPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [journalEntries, setJournalEntries] = useState([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(null);
   const [newEntry, setNewEntry] = useState({
     title: "",
     emotion: null,
     tags: [],
     content: "",
   });
+
+  const deferredQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
     async function loadJournal() {
@@ -56,15 +59,16 @@ export default function JournalPage() {
   }, []);
 
   const filteredEntries = useMemo(() => {
+    if (!deferredQuery) return journalEntries;
+    const query = deferredQuery.toLowerCase();
     return journalEntries.filter((entry) => {
-      const query = searchQuery.toLowerCase();
       return (
         entry.title?.toLowerCase().includes(query) ||
         entry.content?.toLowerCase().includes(query) ||
         entry.tags?.some((tag) => tag.toLowerCase().includes(query))
       );
     });
-  }, [journalEntries, searchQuery]);
+  }, [journalEntries, deferredQuery]);
 
   const avgMood = useMemo(() => {
     if (!journalEntries.length) return "0.0";
@@ -98,18 +102,37 @@ export default function JournalPage() {
       setNewEntry({ title: "", emotion: null, tags: [], content: "" });
     }
 
-    const handleDeleteEntry = async (id) => {
-      if (!confirm("Delete this entry?")) return;
+    const requestDeleteEntry = (id) => {
+      setShowConfirmModal({ id, message: 'Delete this journal entry?' });
+    };
+
+    const confirmDeleteEntry = async (id) => {
+      setShowConfirmModal(null);
       await deleteJournalFromCloud(id);
       setJournalEntries((prev) => prev.filter((entry) => entry.id !== id));
     };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050505]">
-        <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-yellow-300 border-t-transparent" />
-          <p className="mt-4 text-sm uppercase tracking-[0.28em] text-zinc-500">Loading journal</p>
+      <div className="min-h-screen bg-[#050505]">
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="mb-8 flex items-start justify-between gap-6">
+            <div className="space-y-4">
+              <div className="h-10 w-32 rounded-full bg-white/5 animate-pulse" />
+              <div className="h-6 w-48 rounded-full bg-white/5 animate-pulse" />
+              <div className="h-14 w-96 rounded bg-white/5 animate-pulse" />
+              <div className="h-5 w-80 rounded bg-white/5 animate-pulse" />
+            </div>
+            <div className="h-12 w-40 rounded-full bg-white/5 animate-pulse" />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid gap-6 md:grid-cols-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-32 rounded-[1.8rem] bg-white/5 animate-pulse" />
+              ))}
+            </div>
+            <div className="h-56 rounded-[1.8rem] bg-white/5 animate-pulse" />
+          </div>
         </div>
       </div>
     );
@@ -123,6 +146,7 @@ export default function JournalPage() {
             <button
               onClick={() => navigate("/dashboard")}
               className="inline-flex items-center gap-2 rounded-full border border-yellow-200/12 bg-black/30 px-4 py-2 text-xs uppercase tracking-[0.28em] text-yellow-100/80 transition hover:bg-black/45"
+              aria-label="Back to dashboard"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to desk
@@ -142,7 +166,8 @@ export default function JournalPage() {
 
           <button
             onClick={() => setShowNewEntry(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 px-6 py-3.5 text-sm font-bold uppercase tracking-[0.24em] text-black shadow-[0_18px_50px_rgba(250,204,21,0.18)]"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 px-6 py-3.5 text-sm font-bold uppercase tracking-[0.24em] text-black shadow-[0_18px_50px_rgba(250,204,21,0.18)] hover:scale-105 transition-transform"
+            aria-label="Create new journal entry"
           >
             <Plus className="h-4 w-4" />
             New Entry
@@ -192,9 +217,10 @@ export default function JournalPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-2xl border border-white/10 bg-black/35 py-3 pl-12 pr-4 text-white outline-none transition focus:border-yellow-300/35"
+              aria-label="Search journal entries"
             />
           </div>
-          <div className="text-sm text-zinc-500">
+          <div className="text-sm text-zinc-400">
             {filteredEntries.length} {filteredEntries.length === 1 ? "entry" : "entries"} visible
           </div>
         </div>
@@ -205,13 +231,13 @@ export default function JournalPage() {
               <BookOpen className="mx-auto h-14 w-14 text-zinc-600" />
               <h3 className="mt-5 text-2xl font-bold text-white">No journal entries found</h3>
               <p className="mt-3 text-zinc-500">
-                Start tracking your setups, emotions, and lessons while the session is still fresh.
+                {searchQuery ? 'Try a different search term' : 'Start tracking your setups, emotions, and lessons while the session is still fresh.'}
               </p>
               <button
                 onClick={() => setShowNewEntry(true)}
-                className="mt-8 rounded-full bg-yellow-200 px-6 py-3 text-sm font-bold uppercase tracking-[0.22em] text-black"
+                className="mt-8 rounded-full bg-yellow-200 px-6 py-3 text-sm font-bold uppercase tracking-[0.22em] text-black hover:bg-yellow-100 transition"
               >
-                Create first entry
+                {searchQuery ? 'Clear Search' : 'Create first entry'}
               </button>
             </div>
           ) : (
@@ -242,8 +268,9 @@ export default function JournalPage() {
                     </div>
 
                     <button
-                      onClick={() => handleDeleteEntry(entry.id)}
+                      onClick={() => requestDeleteEntry(entry.id)}
                       className="rounded-2xl border border-white/8 bg-black/25 p-3 text-zinc-500 transition hover:border-rose-500/20 hover:text-rose-300"
+                      aria-label={`Delete journal entry: ${entry.title}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -295,6 +322,7 @@ export default function JournalPage() {
                 <button
                   onClick={() => setShowNewEntry(false)}
                   className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-zinc-400 transition hover:text-white"
+                  aria-label="Close new entry form"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -328,6 +356,7 @@ export default function JournalPage() {
                             ? "border-yellow-300/35 bg-yellow-300/10 text-yellow-100"
                             : "border-white/8 bg-white/[0.03] text-zinc-400 hover:text-white"
                         }`}
+                        aria-label={`Set emotion: ${item.label}`}
                       >
                         <div className="text-sm font-semibold">{item.label}</div>
                         <div className="mt-1 text-xs uppercase tracking-[0.2em]">Level {item.value}</div>
@@ -373,15 +402,55 @@ export default function JournalPage() {
               <div className="flex items-center justify-end gap-3 border-t border-white/8 p-6">
                 <button
                   onClick={() => setShowNewEntry(false)}
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-zinc-300"
+                  className="rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/[0.06] transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEntry}
-                  className="rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 px-6 py-3 text-sm font-bold uppercase tracking-[0.22em] text-black"
+                  className="rounded-full bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 px-6 py-3 text-sm font-bold uppercase tracking-[0.22em] text-black hover:scale-105 transition-transform"
                 >
                   Save Entry
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirm Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="journal-confirm-title"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0a0a0a] p-6 shadow-2xl"
+            >
+              <h3 id="journal-confirm-title" className="text-lg font-bold text-white mb-2">Confirm Delete</h3>
+              <p className="text-sm text-zinc-400 mb-6">{showConfirmModal.message}</p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowConfirmModal(null)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium border border-white/10 text-zinc-300 hover:bg-white/[0.04] transition"
+                  autoFocus
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => confirmDeleteEntry(showConfirmModal.id)}
+                  className="px-4 py-2 rounded-xl text-sm font-bold bg-red-500 text-white hover:bg-red-400 transition"
+                >
+                  Delete
                 </button>
               </div>
             </motion.div>

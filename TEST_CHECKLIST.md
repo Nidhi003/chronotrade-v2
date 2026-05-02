@@ -44,7 +44,7 @@
 ### 6. Subscription Flow
 - [ ] Subscribe page loads
 - [ ] Plan selection works
-- [ ] Stripe checkout redirects
+- [ ] Razorpay checkout opens
 - [ ] Post-payment redirect works
 
 ### 7. Mobile

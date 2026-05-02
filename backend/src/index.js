@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import { createClient } from '@supabase/supabase-js';
-import Stripe from 'stripe';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import razorpayRoutes from './routes/razorpay.js';
@@ -9,7 +9,6 @@ import razorpayRoutes from './routes/razorpay.js';
 dotenv.config();
 
 const app = express();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
 
 // Rate limiting
 const authLimiter = rateLimit({
@@ -44,8 +43,11 @@ const freeTierLimiter = rateLimit({
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('X-XSS-Protection', '0'); // CSP handles XSS protection now
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.razorpay.com; font-src 'self'; frame-src https://checkout.razorpay.com;");
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
 });
 
@@ -56,7 +58,7 @@ const supabase = createClient(
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL || 'https://your-project.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 'your-service-role-key'
+  process.env.SUPABASE_SERVICE_ROLE_KEY || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('SUPABASE_SERVICE_ROLE_KEY is required in production'); })() : process.env.SUPABASE_KEY || 'your-service-role-key')
 );
 
 // Input validation helpers
@@ -135,10 +137,15 @@ function normalizeTradePayload(trade) {
 }
 
 app.use(cors({
-  origin: true,
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());
+
+// Razorpay webhook needs raw body for signature verification (must be before express.json)
+app.use('/api/webhook/razorpay', express.raw({ type: 'application/json' }));
+
+app.use(express.json({ limit: '1mb' }));
+app.use(compression({ threshold: 1024 }));
 
 // Razorpay routes
 app.use('/api', razorpayRoutes);
@@ -200,7 +207,7 @@ app.get('/api/auth/user', async (req, res) => {
 });
 
 // Trades routes
-app.get('/api/trades', async (req, res) => {
+app.get('/api/trades', apiLimiter, async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
@@ -210,16 +217,22 @@ app.get('/api/trades', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid user' });
     const db = getAuthedSupabase(token);
 
-    const { data, error } = await db
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = (page - 1) * limit;
+
+    const { data, error, count } = await db
       .from('trades')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
     
     if (error) throw error;
-    res.json(data);
+    res.json({ data, page, limit, total: count || 0 });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Trades fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch trades' });
   }
 });
 
@@ -312,7 +325,7 @@ app.delete('/api/trades/:id', apiLimiter, async (req, res) => {
 });
 
 // Journal entries
-app.get('/api/journal', async (req, res) => {
+app.get('/api/journal', apiLimiter, async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
@@ -322,13 +335,24 @@ app.get('/api/journal', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid user' });
     const db = getAuthedSupabase(token);
 
-    const { data, error } = await db
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = (page - 1) * limit;
+
+    const { data, error, count } = await db
       .from('journal_entries')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
     
     if (error) throw error;
+    res.json({ data, page, limit, total: count || 0 });
+  } catch (error) {
+    console.error('Journal fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch journal entries' });
+  }
+});
     res.json(data);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -371,7 +395,8 @@ app.post('/api/journal', apiLimiter, async (req, res) => {
   }
 });
 
-// Update subscription tier
+// Update subscription tier (only for downgrading to free)
+// Upgrades must be processed via Razorpay webhook
 app.post('/api/update-tier', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -381,135 +406,36 @@ app.post('/api/update-tier', async (req, res) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (!user) return res.status(401).json({ error: 'Invalid user' });
     
-    const { tier, billing } = req.body;
-    if (!['pro', 'elite', 'free'].includes(tier)) {
-      return res.status(400).json({ error: 'Invalid tier' });
+    const { tier } = req.body;
+    
+    // Only allow downgrading to free via API
+    if (tier !== 'free') {
+      return res.status(403).json({ 
+        error: 'Upgrades must be processed through payment. Use Razorpay checkout to upgrade.' 
+      });
     }
     
     // Update user metadata using service role key
     const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       user_metadata: { 
-        subscription_tier: tier, 
-        billing_cycle: billing || 'monthly',
-        subscription_date: new Date().toISOString()
+        subscription_tier: 'free',
+        billing_cycle: null,
+        subscription_date: null,
+        razorpay_payment_id: null,
+        razorpay_order_id: null,
       }
     });
     
     if (error) throw error;
-    res.json({ success: true, tier });
+    res.json({ success: true, tier: 'free' });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Tier update error:', error);
+    res.status(400).json({ error: 'Failed to update tier' });
   }
-});
-
-// Subscriptions
-app.post('/api/stripe/checkout', async (req, res) => {
-  try {
-    const { priceId, userId, billing } = req.body;
-    if (!priceId) return res.status(400).json({ error: 'Missing priceId' });
-
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${frontendUrl}/dashboard?checkout=success`,
-      cancel_url: `${frontendUrl}/subscribe?checkout=cancelled`,
-      client_reference_id: userId || undefined,
-      metadata: {
-        userId: userId || '',
-        billing: billing || 'monthly',
-      },
-    });
-
-    res.json({ url: session.url });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-app.post('/api/subscriptions', apiLimiter, async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
-    
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return res.status(401).json({ error: 'Invalid user' });
-    
-    const { priceId, customerId } = req.body;
-    if (!priceId || !customerId) {
-      return res.status(400).json({ error: 'Missing priceId or customerId' });
-    }
-    
-    const subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{ price: priceId }],
-      payment_behavior: 'default_incomplete',
-      expand: ['latest_invoice.payment_intent'],
-    });
-    res.json(subscription);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-app.get('/api/subscriptions/:id', apiLimiter, async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
-    
-    const subscription = await stripe.subscriptions.retrieve(req.params.id);
-    res.json(subscription);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-app.post('/api/subscriptions/cancel', apiLimiter, async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
-    
-    const { subscriptionId } = req.body;
-    if (!subscriptionId) {
-      return res.status(400).json({ error: 'Missing subscriptionId' });
-    }
-    
-    const subscription = await stripe.subscriptions.cancel(subscriptionId);
-    res.json(subscription);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// Stripe webhook
-app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  if (event.type === 'invoice.payment_succeeded') {
-    const invoice = event.data.object;
-    const periodEnd = invoice.lines.data[0]?.period?.end;
-    await supabase
-      .from('subscriptions')
-      .update({
-        status: 'active',
-        current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-      })
-      .eq('stripe_customer_id', invoice.customer);
-  }
-
-  res.json({ received: true });
 });
 
 // Support endpoint - routes to nidhitrades17@gmail.com
-app.post('/api/support', async (req, res) => {
+app.post('/api/support', apiLimiter, async (req, res) => {
   try {
     const { category, subject, message, email, tier, priority } = req.body;
     
@@ -517,28 +443,52 @@ app.post('/api/support', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Input validation
+    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    if (typeof subject !== 'string' || subject.length > 200) {
+      return res.status(400).json({ error: 'Subject too long' });
+    }
+    if (typeof message !== 'string' || message.length > 10000) {
+      return res.status(400).json({ error: 'Message too long' });
+    }
+    if (category && typeof category !== 'string') {
+      return res.status(400).json({ error: 'Invalid category' });
+    }
+
     const supportEmail = 'nidhitrades17@gmail.com';
     
     console.log('Support Ticket:', {
       to: supportEmail,
       from: email,
-      category,
-      subject,
-      message,
-      tier,
-      priority,
+      category: sanitizeString(category, 50),
+      subject: sanitizeString(subject, 200),
+      message: sanitizeString(message, 10000),
+      tier: sanitizeString(tier, 20),
+      priority: sanitizeString(priority, 20),
       timestamp: new Date().toISOString(),
     });
 
     res.json({ success: true, message: 'Support ticket submitted' });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Support endpoint error:', error);
+    res.status(500).json({ error: 'Failed to submit support ticket' });
   }
 });
 
 // Forex News API - Scrapes from multiple sources
-app.get('/api/news', async (req, res) => {
+let cachedNews = null;
+let newsCacheTime = 0;
+const NEWS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+app.get('/api/news', apiLimiter, async (req, res) => {
   try {
+    const now = Date.now();
+    if (cachedNews && (now - newsCacheTime) < NEWS_CACHE_TTL) {
+      return res.json(cachedNews);
+    }
+
     const news = [];
     
     // Using free RSS feeds for forex news
@@ -603,11 +553,28 @@ app.get('/api/news', async (req, res) => {
       );
     }
     
-    res.json(news.slice(0, 15));
+    const result = news.slice(0, 15);
+    cachedNews = result;
+    newsCacheTime = now;
+    res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('News endpoint error:', error);
+    res.status(500).json({ error: 'Failed to fetch news' });
   }
 });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Global error handler (prevents leaking internal errors)
+app.use((err, req, res, next) => {
+  console.error('Internal error:', err);
+  res.status(err.status || 500).json({
+    error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
+  });
+});
+
+// Handle 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});

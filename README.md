@@ -11,7 +11,7 @@ A professional trading journal with AI-powered insights, built with free resourc
 | **AI** | Ollama (local) | $0 |
 | **Backend** | Node.js/Express | $0 (localhost) |
 | **Frontend** | Vercel | $0 |
-| **Payments** | Stripe | Only on fees |
+| **Payments** | Razorpay | 0% setup, per-transaction |
 
 ## Quick Start
 
@@ -97,7 +97,7 @@ chronotrade-v2/
 ## API Keys Setup
 
 1. **Supabase**: Project → Settings → API
-2. **Stripe** (optional): Developers → API Keys (test mode free)
+2. **Razorpay**: Dashboard → Settings → API Keys
 
 ## Environment Variables
 
@@ -106,12 +106,15 @@ chronotrade-v2/
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_API_URL=http://localhost:3001/api
+VITE_RAZORPAY_KEY_ID=
 
 # Backend (.env)
 SUPABASE_URL=
 SUPABASE_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
+SUPABASE_SERVICE_ROLE_KEY=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
 ```
 
 ## License

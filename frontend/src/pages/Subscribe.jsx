@@ -75,38 +75,6 @@ export default function Subscribe() {
     const plan = PLANS.find(p => p.id === planId);
     if (!plan) return;
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
-    const SUBSCRIPTION_LINKS = {
-      "pro-monthly": "https://rzp.io/rzp/q5ZORjE",
-      "elite-monthly": "https://rzp.io/rzp/tPkGexc",
-      "pro-yearly": "https://rzp.io/rzp/JI8G17wV",
-      "elite-yearly": "https://rzp.io/rzp/Gu6BimP5",
-    };
-
-    if (planId !== "free") {
-      const linkKey = `${planId}-${billing}`;
-      const link = SUBSCRIPTION_LINKS[linkKey];
-      if (link) {
-        try {
-          await fetch(`${API_URL}/api/update-tier`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({ tier: planId, billing }),
-          });
-        } catch (err) {
-          console.error("Failed to update tier:", err);
-        }
-        await subscribe(planId);
-        window.open(link, "_blank");
-        navigate("/dashboard");
-        return;
-      }
-    }
-
     setLoading(true);
     
     try {
@@ -118,7 +86,7 @@ export default function Subscribe() {
       const orderResponse = await fetch(`${API_URL}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amountInPaise, currency: 'INR' }),
+        body: JSON.stringify({ amount: amountInPaise, currency: 'INR', notes: { user_id: user?.id, plan: planId, billing } }),
       });
 
       if (!orderResponse.ok) {
