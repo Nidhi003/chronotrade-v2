@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import razorpayRoutes from './routes/razorpay.js';
 
 dotenv.config();
 
@@ -130,6 +131,9 @@ function normalizeTradePayload(trade) {
 
 app.use(cors());
 app.use(express.json());
+
+// Razorpay routes
+app.use('/api', razorpayRoutes);
 
 // Auth routes
 app.post('/api/auth/signup', authLimiter, async (req, res) => {
