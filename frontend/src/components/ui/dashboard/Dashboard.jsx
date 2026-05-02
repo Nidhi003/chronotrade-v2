@@ -389,6 +389,25 @@ export default function TradingDashboard() {
                 </motion.div>
               )}
 
+              {/* Upgrade Banner for Pro users */}
+              {tier === 'pro' && (
+                <motion.div variants={itemVariants} className="upgrade-banner rounded-[1.8rem] border border-purple-500/20 bg-gradient-to-r from-purple-500/[0.08] to-black p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 via-purple-500 to-indigo-600 shadow-[0_12px_30px_rgba(147,51,234,0.25)]">
+                      <Gem className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">Upgrade to Elite</div>
+                      <div className="text-xs text-zinc-400 mt-0.5">Unlock multi-account management, psychology tracking, AI insights & session analysis</div>
+                    </div>
+                  </div>
+                  <button onClick={() => navigate('/subscribe')} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-400 to-indigo-500 px-6 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-[0_12px_30px_rgba(147,51,234,0.2)] transition-all hover:shadow-[0_16px_40px_rgba(147,51,234,0.3)] active:scale-95 whitespace-nowrap">
+                    <ArrowRight className="h-4 w-4" /> Upgrade to Elite
+                  </button>
+                </motion.div>
+              )}
+              )}
+
               <CommandCenterPanel />
 
               <StatsCards trades={trades} theme={theme} />
