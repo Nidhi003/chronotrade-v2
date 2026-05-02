@@ -410,7 +410,6 @@ export default function TradingDashboard() {
                   </button>
                 </motion.div>
               )}
-              )}
 
               <CommandCenterPanel />
 
