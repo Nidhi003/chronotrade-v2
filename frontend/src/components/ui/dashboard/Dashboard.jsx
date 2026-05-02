@@ -32,6 +32,7 @@ import {
   Crown,
   Gem,
   ArrowRight,
+  Lock,
   LifeBuoy,
   Flame,
   BarChart3,
@@ -841,11 +842,9 @@ const Sidebar = ({ open, setOpen, selected, setSelected, onLogout, theme, tier =
             >
               <Icon className={`h-5 w-5 shrink-0 ${isLocked ? 'opacity-40' : ''}`} />
               {open && (
-                <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">
+                <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden flex items-center gap-2">
                   {item.label}
-                  {isLocked && (
-                    <span className="ml-2 text-[10px] uppercase tracking-wider text-zinc-600">locked</span>
-                  )}
+                  {isLocked && <Lock className="h-3.5 w-3.5 text-zinc-600" />}
                 </span>
               )}
               {isLocked && !open && (
