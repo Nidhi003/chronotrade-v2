@@ -412,6 +412,55 @@ export default function TradingDashboard() {
                 </motion.div>
               )}
 
+              {/* Plan Features Overview */}
+              <motion.div variants={itemVariants} className="rounded-[1.8rem] border border-yellow-200/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6">
+                <h3 className="text-lg font-bold text-white mb-4">Plan Features</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                    <div className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-3">Free</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <Check className="h-4 w-4 text-emerald-400" /> Dashboard
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <Check className="h-4 w-4 text-emerald-400" /> Journal
+                      </div>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-yellow-200/20 bg-yellow-200/[0.04] p-4">
+                    <div className="text-xs uppercase tracking-[0.2em] text-yellow-200/60 mb-3">Pro — ₹1500/mo</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <Calendar className="h-4 w-4 text-yellow-300" /> Calendar
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <BarChart3 className="h-4 w-4 text-yellow-300" /> Analytics
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <Download className="h-4 w-4 text-yellow-300" /> Reports
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <Target className="h-4 w-4 text-yellow-300" /> Setups
+                      </div>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-purple-500/20 bg-purple-500/[0.04] p-4">
+                    <div className="text-xs uppercase tracking-[0.2em] text-purple-400/60 mb-3">Elite — ₹3000/mo</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <Brain className="h-4 w-4 text-purple-400" /> Psychology
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <Wallet className="h-4 w-4 text-purple-400" /> Accounts
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-zinc-300">
+                        <Gem className="h-4 w-4 text-purple-400" /> Everything in Pro
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
               <CommandCenterPanel />
 
               <StatsCards trades={trades} theme={theme} />
