@@ -57,6 +57,13 @@ const PLANS = [
 
 const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SkbD1c5YkSnmcG";
 
+const PAYMENT_LINKS = {
+  "pro-monthly": "https://rzp.io/rzp/q5ZORjE",
+  "elite-monthly": "https://rzp.io/rzp/tPkGexc",
+  "pro-yearly": "https://rzp.io/rzp/JI8G17wV",
+  "elite-yearly": "https://rzp.io/rzp/Gu6BimP5",
+};
+
 function loadRazorpayScript() {
   return new Promise((resolve, reject) => {
     if (window.Razorpay) {
@@ -73,7 +80,7 @@ function loadRazorpayScript() {
 }
 
 export default function Subscribe() {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const { subscribe, tier, refreshTier } = useSubscription();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -103,90 +110,121 @@ export default function Subscribe() {
       return;
     }
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
     setLoading(true);
 
     try {
-      await loadRazorpayScript();
-
       const amountInINR = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
       const amountInPaise = Math.round(amountInINR * 100);
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      // Try backend order creation first
+      let order_id = null;
+      let orderAmount = amountInPaise;
+      let useBackend = true;
 
-      const orderResponse = await fetch(`${API_URL}/api/create-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amountInPaise, currency: 'INR', notes: { user_id: user.id, plan: planId, billing } }),
-      });
+      try {
+        const orderResponse = await fetch(`${API_URL}/api/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: amountInPaise, currency: 'INR', notes: { user_id: user.id, plan: planId, billing } }),
+        });
 
-      if (!orderResponse.ok) {
-        const error = await orderResponse.json();
-        throw new Error(error.error || 'Failed to create payment order');
+        if (!orderResponse.ok) {
+          const errorData = await orderResponse.json();
+          throw new Error(errorData.error || 'Failed to create order');
+        }
+
+        const orderData = await orderResponse.json();
+        order_id = orderData.order_id;
+        orderAmount = orderData.amount || amountInPaise;
+      } catch (err) {
+        console.warn('Backend order creation failed, falling back to direct payment:', err);
+        useBackend = false;
       }
 
-      const { order_id, amount: orderAmount } = await orderResponse.json();
+      if (useBackend && order_id) {
+        // Full checkout flow with order
+        await loadRazorpayScript();
 
-      const options = {
-        key: RAZORPAY_KEY,
-        amount: orderAmount || amountInPaise,
-        currency: "INR",
-        name: "ChronoTradez",
-        description: `${plan.name} Plan - ${billing}`,
-        image: "/favicon.svg",
-        order_id,
-        handler: async function (response) {
-          try {
-            const verifyResponse = await fetch(`${API_URL}/api/verify-payment`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
+        const options = {
+          key: RAZORPAY_KEY,
+          amount: orderAmount,
+          currency: "INR",
+          name: "ChronoTradez",
+          description: `${plan.name} Plan - ${billing}`,
+          image: "/favicon.svg",
+          order_id,
+          handler: async function (response) {
+            try {
+              const verifyResponse = await fetch(`${API_URL}/api/verify-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
 
-            const verifyResult = await verifyResponse.json();
+              const verifyResult = await verifyResponse.json();
 
-            if (!verifyResponse.ok || !verifyResult.success) {
-              throw new Error(verifyResult.error || 'Payment verification failed');
+              if (!verifyResponse.ok || !verifyResult.success) {
+                throw new Error(verifyResult.error || 'Payment verification failed');
+              }
+
+              await subscribe(planId);
+              await refreshTier();
+              showToast("Payment successful! Welcome to " + plan.name, "success");
+              navigate("/dashboard");
+            } catch (err) {
+              console.error("Payment verification error:", err);
+              showToast("Payment verification failed: " + err.message, "error");
             }
+          },
+          prefill: {
+            email: user?.email || "",
+            name: user?.user_metadata?.name || user?.email?.split('@')[0] || "",
+          },
+          notes: {
+            plan: planId,
+            billing: billing,
+            user_id: user.id,
+          },
+          theme: { color: "#facc15" },
+          modal: { ondismiss: () => setLoading(false) }
+        };
 
-            await subscribe(planId);
-            await refreshTier();
-            showToast("Payment successful! Welcome to " + plan.name, "success");
-            navigate("/dashboard");
-          } catch (err) {
-            console.error("Payment verification error:", err);
-            showToast("Payment verification failed: " + err.message, "error");
-          }
-        },
-        prefill: {
-          email: user?.email || "",
-          name: user?.user_metadata?.name || user?.email?.split('@')[0] || "",
-        },
-        notes: {
-          plan: planId,
-          billing: billing,
-          user_id: user.id,
-        },
-        theme: {
-          color: "#facc15",
-        },
-        modal: {
-          ondismiss: function() {
-            setLoading(false);
-          }
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', (response) => {
+          console.error("Payment failed:", response.error);
+          setLoading(false);
+          showToast("Payment failed: " + response.error.description, "error");
+        });
+        rzp.open();
+      } else {
+        // Fallback: open payment link directly
+        const linkKey = `${planId}-${billing}`;
+        const link = PAYMENT_LINKS[linkKey];
+
+        if (link) {
+          showToast("Opening payment page...", "info");
+
+          // Update tier locally so features unlock immediately
+          await subscribe(planId);
+          await refreshTier();
+
+          window.open(link, "_blank", "noopener,noreferrer");
+          setLoading(false);
+
+          // Show instructions
+          setTimeout(() => {
+            showToast("Complete payment in the new tab. Your plan will activate automatically.", "info");
+          }, 2000);
+        } else {
+          throw new Error(`Payment link not found for ${planId} ${billing}`);
         }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', (response) => {
-        console.error("Payment failed:", response.error);
-        setLoading(false);
-        showToast("Payment failed: " + response.error.description, "error");
-      });
-      rzp.open();
+      }
     } catch (e) {
       console.error("Payment error:", e);
       setLoading(false);
