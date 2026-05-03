@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, CreditCard, Crown, Rocket, Shield, Zap } from "lucide-react";
@@ -36,7 +36,6 @@ const PLANS = [
       "Advanced analytics",
     ],
     popular: true,
-    razorpayKey: "rzp_live_YOUR_PRO_MONTHLY_KEY", // Replace with real Razorpay plan ID
   },
   {
     id: "elite",
@@ -53,9 +52,25 @@ const PLANS = [
       "AI insights & session analysis",
     ],
     popular: false,
-    razorpayKey: "rzp_live_YOUR_ELITE_MONTHLY_KEY", // Replace with real Razorpay plan ID
   },
 ];
+
+const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SkbD1c5YkSnmcG";
+
+function loadRazorpayScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/razorpay.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
+    document.body.appendChild(script);
+  });
+}
 
 export default function Subscribe() {
   const { user, session } = useAuth();
@@ -64,6 +79,13 @@ export default function Subscribe() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [billing, setBilling] = useState("monthly");
+  const [razorpayReady, setRazorpayReady] = useState(false);
+
+  useEffect(() => {
+    loadRazorpayScript()
+      .then(() => setRazorpayReady(true))
+      .catch(() => setRazorpayReady(false));
+  }, []);
 
   const handleSubscribe = async (planId) => {
     if (planId === "free") {
@@ -75,30 +97,38 @@ export default function Subscribe() {
     const plan = PLANS.find(p => p.id === planId);
     if (!plan) return;
 
+    if (!user?.id) {
+      showToast("Please sign in to subscribe", "error");
+      navigate("/auth");
+      return;
+    }
+
     setLoading(true);
-    
+
     try {
-      const amountInDollars = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
-      const amountInPaise = Math.round(amountInDollars * 100);
+      await loadRazorpayScript();
+
+      const amountInINR = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+      const amountInPaise = Math.round(amountInINR * 100);
 
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      
+
       const orderResponse = await fetch(`${API_URL}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amountInPaise, currency: 'INR', notes: { user_id: user?.id, plan: planId, billing } }),
+        body: JSON.stringify({ amount: amountInPaise, currency: 'INR', notes: { user_id: user.id, plan: planId, billing } }),
       });
 
       if (!orderResponse.ok) {
         const error = await orderResponse.json();
-        throw new Error(error.error || 'Failed to create order');
+        throw new Error(error.error || 'Failed to create payment order');
       }
 
-      const { order_id } = await orderResponse.json();
+      const { order_id, amount: orderAmount } = await orderResponse.json();
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SkbD1c5YkSnmcG",
-        amount: amountInPaise,
+        key: RAZORPAY_KEY,
+        amount: orderAmount || amountInPaise,
         currency: "INR",
         name: "ChronoTradez",
         description: `${plan.name} Plan - ${billing}`,
@@ -133,27 +163,34 @@ export default function Subscribe() {
         },
         prefill: {
           email: user?.email || "",
+          name: user?.user_metadata?.name || user?.email?.split('@')[0] || "",
         },
         notes: {
           plan: planId,
           billing: billing,
+          user_id: user.id,
         },
         theme: {
           color: "#facc15",
         },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
+          }
+        }
       };
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', (response) => {
         console.error("Payment failed:", response.error);
+        setLoading(false);
         showToast("Payment failed: " + response.error.description, "error");
       });
       rzp.open();
     } catch (e) {
       console.error("Payment error:", e);
-      showToast("Payment error: " + e.message, "error");
-    } finally {
       setLoading(false);
+      showToast("Payment error: " + e.message, "error");
     }
   };
 
@@ -256,12 +293,12 @@ export default function Subscribe() {
 
               <button
                 onClick={() => handleSubscribe(plan.id)}
-                disabled={loading}
+                disabled={loading || (!razorpayReady && plan.id !== "free")}
                 className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-bold uppercase tracking-[0.24em] transition ${
                   plan.popular
                     ? "bg-yellow-200 text-black hover:bg-yellow-100"
                     : "border border-yellow-200/18 bg-black/35 text-yellow-100 hover:bg-black/50"
-                } disabled:opacity-60`}
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
               >
                 {plan.monthlyPrice === 0 ? (
                   <>
@@ -272,6 +309,11 @@ export default function Subscribe() {
                   <>
                     <Check className="h-4 w-4" />
                     Current Plan
+                  </>
+                ) : !razorpayReady ? (
+                  <>
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                    Loading...
                   </>
                 ) : (
                   <>
