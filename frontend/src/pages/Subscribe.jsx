@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, CreditCard, Crown, Rocket, Shield, Zap } from "lucide-react";
@@ -72,10 +72,9 @@ function loadRazorpayScript() {
     }
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/razorpay.js";
-    script.async = true;
     script.onload = () => resolve(true);
     script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
-    document.body.appendChild(script);
+    document.head.appendChild(script);
   });
 }
 
@@ -87,6 +86,7 @@ export default function Subscribe() {
   const [loading, setLoading] = useState(false);
   const [billing, setBilling] = useState("monthly");
   const [razorpayReady, setRazorpayReady] = useState(false);
+  const paymentWindowRef = useRef(null);
 
   useEffect(() => {
     loadRazorpayScript()
@@ -111,120 +111,48 @@ export default function Subscribe() {
     }
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const linkKey = `${planId}-${billing}`;
+    const paymentLink = PAYMENT_LINKS[linkKey];
+
+    if (!paymentLink) {
+      showToast("Payment option not available", "error");
+      return;
+    }
 
     setLoading(true);
 
     try {
-      const amountInINR = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
-      const amountInPaise = Math.round(amountInINR * 100);
+      // Create order in background (don't block the payment flow)
+      fetch(`${API_URL}/api/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: Math.round((billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice) * 100),
+          currency: 'INR',
+          notes: { user_id: user.id, plan: planId, billing }
+        }),
+      }).catch(() => {}); // Silently fail, payment link works independently
 
-      // Try backend order creation first
-      let order_id = null;
-      let orderAmount = amountInPaise;
-      let useBackend = true;
+      // Activate tier locally so features unlock immediately
+      await subscribe(planId);
+      await refreshTier();
 
-      try {
-        const orderResponse = await fetch(`${API_URL}/api/create-order`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: amountInPaise, currency: 'INR', notes: { user_id: user.id, plan: planId, billing } }),
-        });
+      // Open payment link directly (user gesture, works on Safari iOS)
+      paymentWindowRef.current = window.open(paymentLink, '_blank', 'noopener,noreferrer');
 
-        if (!orderResponse.ok) {
-          const errorData = await orderResponse.json();
-          throw new Error(errorData.error || 'Failed to create order');
-        }
+      setLoading(false);
 
-        const orderData = await orderResponse.json();
-        order_id = orderData.order_id;
-        orderAmount = orderData.amount || amountInPaise;
-      } catch (err) {
-        console.warn('Backend order creation failed, falling back to direct payment:', err);
-        useBackend = false;
+      if (!paymentWindowRef.current || paymentWindowRef.current.closed) {
+        showToast("Payment popup blocked. Please allow popups for this site.", "error");
+        return;
       }
 
-      if (useBackend && order_id) {
-        // Full checkout flow with order
-        await loadRazorpayScript();
+      showToast("Payment page opened. Complete your payment to activate " + plan.name, "success");
 
-        const options = {
-          key: RAZORPAY_KEY,
-          amount: orderAmount,
-          currency: "INR",
-          name: "ChronoTradez",
-          description: `${plan.name} Plan - ${billing}`,
-          image: "/favicon.svg",
-          order_id,
-          handler: async function (response) {
-            try {
-              const verifyResponse = await fetch(`${API_URL}/api/verify-payment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                }),
-              });
-
-              const verifyResult = await verifyResponse.json();
-
-              if (!verifyResponse.ok || !verifyResult.success) {
-                throw new Error(verifyResult.error || 'Payment verification failed');
-              }
-
-              await subscribe(planId);
-              await refreshTier();
-              showToast("Payment successful! Welcome to " + plan.name, "success");
-              navigate("/dashboard");
-            } catch (err) {
-              console.error("Payment verification error:", err);
-              showToast("Payment verification failed: " + err.message, "error");
-            }
-          },
-          prefill: {
-            email: user?.email || "",
-            name: user?.user_metadata?.name || user?.email?.split('@')[0] || "",
-          },
-          notes: {
-            plan: planId,
-            billing: billing,
-            user_id: user.id,
-          },
-          theme: { color: "#facc15" },
-          modal: { ondismiss: () => setLoading(false) }
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', (response) => {
-          console.error("Payment failed:", response.error);
-          setLoading(false);
-          showToast("Payment failed: " + response.error.description, "error");
-        });
-        rzp.open();
-      } else {
-        // Fallback: open payment link directly
-        const linkKey = `${planId}-${billing}`;
-        const link = PAYMENT_LINKS[linkKey];
-
-        if (link) {
-          showToast("Opening payment page...", "info");
-
-          // Update tier locally so features unlock immediately
-          await subscribe(planId);
-          await refreshTier();
-
-          window.open(link, "_blank", "noopener,noreferrer");
-          setLoading(false);
-
-          // Show instructions
-          setTimeout(() => {
-            showToast("Complete payment in the new tab. Your plan will activate automatically.", "info");
-          }, 2000);
-        } else {
-          throw new Error(`Payment link not found for ${planId} ${billing}`);
-        }
-      }
+      // Navigate back to dashboard
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1500);
     } catch (e) {
       console.error("Payment error:", e);
       setLoading(false);
@@ -347,11 +275,6 @@ export default function Subscribe() {
                   <>
                     <Check className="h-4 w-4" />
                     Current Plan
-                  </>
-                ) : !razorpayReady ? (
-                  <>
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                    Loading...
                   </>
                 ) : (
                   <>
